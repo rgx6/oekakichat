@@ -1,0 +1,90 @@
+extends layout
+
+block head
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', href='/stylesheets/colorpicker.css')
+    script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
+    script(type='text/javascript', src='/socket.io/socket.io.js')
+    script(type='text/javascript', src='/javascripts/chat.js')
+    script(type='text/javascript', src='/javascripts/ColorPicker.js')
+
+block body
+    div.outline(style='width: #{width}px; height: #{height+28}px;')
+        div#toolbar.toolbar(style='width: #{width}px; height: 28px;')
+            div.drawTool
+                input#brush(name='tool', type='radio', checked='checked')
+                label(for='brush') 筆
+                input#eraser(name='tool', type='radio')
+                label(for='eraser') 消
+                input#spuit(name='tool', type='radio')
+                label(for='spuit') 吸
+            div#pallet.pallet
+                #color1.selectedColor
+                #color2
+                #color3
+                #color4
+                #color5
+                #color6
+                #color7
+                #color8
+            div.brushSize
+                input#brushSizeRange.brushSizeRange(type='range', min='1', max='21', step='1')
+                canvas#brushSizeCanvas.brushSizeCanvas(width='25px', height='25px')
+            div.function
+                label#save 保
+                label#clear 無
+                label#log log
+                label#help ？
+            div.info
+                label#userCount.userCount
+                label#globalUserCount.userCount
+            div.clear
+        div.canvas
+            canvas#mainCanvas.mainCanvas(width='#{width}px', height='#{height}px')
+            canvas#cursorCanvas.mainCanvas(width='#{width}px', height='#{height}px')
+        div#cp.cp(style='display: none; position: fixed; background-color: #fff;')
+            div#gradientBox
+                img#gradientImg(src='/images/color_picker_gradient.png')
+                img#circle(src='/images/color_picker_circle.gif')
+            div#hueBarDiv
+                img(style='position: absolute; height: 256px; width: 19px; left: 8px;', src='/images/color_picker_bar.png')
+                img#arrows(style='position: absolute; height: 9px; width: 35px; left: 0px;', src='/images/color_picker_arrows.gif')
+            div#Qc
+                div#QcSc
+                    div#quickColor
+                    div#staticColor
+                    div.staticColorFixed
+                br
+                table(width='100%', style='position: absolute; top: 55px;')
+                    tr
+                        td Hex:
+                        td
+                            input(size='8', type='text', id='hexBox', onchange='hexBoxChanged();')
+                    tr
+                        td Red:
+                        td
+                            input(size='8', type='text', id='redBox', onchange='redBoxChanged();')
+                    tr
+                        td Green:
+                        td
+                            input(size='8', type='text', id='greenBox', onchange='greenBoxChanged();')
+                    tr
+                        td Blue:
+                        td
+                            input(size='8', type='text', id='blueBox', onchange='blueBoxChanged();')
+                    tr
+                        td Hue:
+                        td
+                            input(size='8', type='text', id='hueBox', onchange='hueBoxChanged();')
+                    tr
+                        td Saturation:
+                        td
+                            input(size='8', type='text', id='saturationBox', onchange='saturationBoxChanged();')
+                    tr
+                        td Value:
+                        td
+                            input(size='8', type='text', id='valueBox', onchange='valueBoxChanged();')
+                    tr
+                        td
+                            button#cpOK OK
+                            button#cpCancel Cancel

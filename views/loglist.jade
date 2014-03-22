@@ -1,0 +1,15 @@
+extends layout
+
+block head
+
+block body
+    ul
+    each file in files
+        - var name = file.replace('thumb.', '');
+        a(href='/log/#{name}') #{name}
+        br
+        a(href='/log/#{name}')
+            img(src='/log/thumb/#{file}', style='border: solid 1px grey', alt='ファイルがないよ(´・ω・｀)')
+        br
+        br
+        

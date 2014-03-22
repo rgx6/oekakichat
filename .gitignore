@@ -1,0 +1,9 @@
+
+node_modules
+/db/*
+/log/*
+/public/log/*.png
+/public/log/thumb/*.png
+/.c9revisions
+/.settings
+

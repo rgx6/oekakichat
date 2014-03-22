@@ -1,0 +1,209 @@
+/**
+ * 全体の外枠
+ */
+.outline {
+    border: solid;
+    border-width: 1px;
+    border-color: #bdc3c7;
+}
+
+/**
+ * ツールバー
+ */
+.toolbar {
+    background-color: #bdc3c7;
+    position: fixed;
+    z-index: 1;
+}
+
+.toolbar div {
+    float: left;
+}
+
+/**
+ * 絵を書く道具
+ */
+.drawTool input {
+    display: none;
+}
+
+.drawTool label {
+    /* 文字とボタンの大きさ、フォント、見直し */
+    /* display: block 必要かどうかよく分からない */
+    /* カーソル置いた時の文字色かなにか変更したい */
+    /* ボタンの間のスペースを調整 全体とのバランスも */
+    display: block;
+    float: left;
+    cursor: pointer;
+    width: 23px;
+    height: 23px;
+    margin-top: 1px;
+    margin-right: 1px;
+    margin-left: 1px;
+    border: solid 1px #2980b9;
+    background-color: transparent;
+    color: #555e64;
+    font-size: 17px;
+    text-align: center;
+    line-height: 23px;
+}
+
+.drawTool label:hover {
+    border-color: #3498db;
+    color: #3498db;
+}
+
+.drawTool input[type='radio']:checked + label {
+    background-color: #2980b9;
+    color: #ffffff;
+}
+
+/**
+ * パレット
+ */
+.pallet {
+    margin-left: 1px;
+}
+
+.pallet>div {
+    /* ボタンと同じようにrdoにしてみる？ */
+    width: 23px;
+    height: 23px;
+    margin-top: 1px;
+    border: solid 1px #bdc3c7;
+    cursor: pointer;
+}
+
+/* TODO : デフォルトの色も見やすい色に変更したい */
+#color1 { background-color: #000000; }
+#color2 { background-color: #ffffff; }
+#color3 { background-color: #ff0000; }
+#color4 { background-color: #00ff00; }
+#color5 { background-color: #0000ff; }
+#color6 { background-color: #ffff00; }
+#color7 { background-color: #ff00ff; }
+#color8 { background-color: #00ffff; }
+
+#staticColor {
+    display: none;
+}
+
+.staticColorFixed {
+	position: absolute;
+	height: 50px;
+	width: 72px;
+	top: 0px;
+	left: 73px;
+}
+
+/**
+ * ペンの太さ選択
+ */
+.brushSize {
+    margin-left: 2px;
+}
+
+.brushSizeRange {
+    float: left;
+    width: 50px;
+    cursor: pointer;
+}
+
+.brushSizeCanvas {
+    float: left;
+    margin-top: 1px;
+    margin-right: 1px;
+    background-color: #ffffff;
+}
+
+/**
+ * 機能
+ */
+.function label {
+    display: block;
+    float: left;
+    cursor: pointer;
+    width: 23px;
+    height: 23px;
+    margin: 1px;
+    border: solid 1px #2980b9;
+    background-color: #2980b9;
+    color: #ffffff;
+    font-size: 17px;
+    text-align: center;
+    line-height: 23px;
+}
+
+.function label:hover {
+    border-color: #3498db;
+    background-color: #3498db;
+}
+
+/**
+ * 部屋接続数
+ */
+.userCount {
+    /* TODO 仮 */
+    display: block;
+    float: left;
+    width: 20px;
+    height: 23px;
+    margin: 1px;
+    color: #000000;
+    font-size: 15px;
+    text-align: right;
+    line-height: 23px;
+}
+
+/**
+ * その他
+ */
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.clear {
+    clear: both;
+}
+
+/**
+ * canvas
+ */
+.mainCanvas {
+    position: absolute;
+    top: 29px;
+    left: 1px;
+}
+
+table input, table td {
+    margin: 0;
+    padding: 0;
+}
+
+/**
+ * ログ
+ */
+.logPage {
+    margin: 20px;
+    text-align: center;
+}
+
+.logPage a {
+    margin-right: 30px;
+}
+
+.inactive {
+    color: #999999;
+}
+
+.thumbnail {
+    float: left;
+    margin: 10px;
+}
+
+.thumbnail img {
+    border: solid;
+    border-width: 1px;
+    border-color: #999999;
+}
