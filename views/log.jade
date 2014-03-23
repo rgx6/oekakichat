@@ -1,15 +1,13 @@
 extends layout
-
 block head
-    link(rel='stylesheet', href='/stylesheets/style.css')
-
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
 block body
     div.logPage
         h1 #{name} お絵かきログ
         div
             if page != 1
                 a(href='../1/') 最初
-                a(href='../#{page-0-1}/') 前
+                a(href='../#{page-1}/') 前
             else
                 a.inactive 最初
                 a.inactive 前
@@ -26,6 +24,6 @@ block body
                 div.thumbnail
                     a(href='/log/#{file}.png')
                         img(src='/log/thumb/#{file}.thumb.png',
-                            title='#{new Date(file).toString()}',
+                            title='#{new Date(Number(file)).toString()}',
                             alt='ファイルがないよ(´・ω・｀)')
-            .clear
+            div.clear

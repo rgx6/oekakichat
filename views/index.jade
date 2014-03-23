@@ -1,88 +1,95 @@
 extends layout
-
 block head
-    link(href='/stylesheets/style.css', rel='stylesheet')
-    link(href='/stylesheets/bootstrap.min.css', rel='stylesheet')
-    script(src='/javascripts/bootstrap.min.js')
-    script(src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
-    script(src='/socket.io/socket.io.js')
-    script(src='/javascripts/index.js')
-
+    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
+    script(type="application/javascript", src="/socket.io/socket.io.js")
+    script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
+    script(type="application/javascript", src="/javascripts/bootstrap.min.js")
+    script(type="application/javascript", src="/javascripts/index.js")
 block body
-    .container
-        .hero-unit
+    div.container(style="max-width: none; important; width: 970px;") 
+        div.jumbotron
             h1= title
 
-        .row
-            .span12
-                p
-                    strike 基本
-                    完全無料のお絵かきチャットです。
-                    br
-                    部屋を作ったらあとは好きなようにお楽しみください。
+        div#inputpart.row
+            div.col-xs-12
+                h2 お絵かきチャットって？
+                p こんなの↓です。サンプルなので好きなように使ってみてください。
+                iframe(src="/00000000000000000000000000000000/", style="border: none;", width="#{widthMin + 2}", height="#{heightMin + 30}")
 
-        #inputpart.row
-            .span12
+        div#inputpart.row
+            div.col-xs-12
                 h2 部屋を作る
-                form#create.form-horizontal
-                    .control-group
-                        label.control-label(for='room-name') 部屋の名前
-                        .controls
-                            input#room-name(type='text', name='name', maxlength='#{nameMax}',
-                                required, placeholder='#{nameMax}文字以内')
-                            p
-                                タイトルバーなんかに表示されます。
-                                あとで変えられます。
-                    .control-group
-                        label.control-label(for='room-width') キャンバスの幅
-                        .controls
-                            input#room-width(type='number', name='width', max='#{widthMax}', min='#{widthMin}',
-                                required, placeholder='#{widthMin}～#{widthMax}')
-                            p
-                                実際のサイズは枠線で +2 されます。
-                                あとで変えられます。
-                    .control-group
-                        label.control-label(for='room-height') キャンバスの高さ
-                        .controls
-                            input#room-height(type='number', name='height', max='#{heightMax}', min='#{heightMin}',
-                                required, placeholder='#{heightMin}～#{heightMax}')
-                            p
-                                実際のサイズは枠線とツールバーで +30 されます。
-                                あとで変えられます。
-                    .control-group
-                        label.control-label(for='room-isLogOpened') ログを公開する
-                        .controls
-                            input#room-isLogOpened(type='checkbox', name='isLogOpened')
-                            p
-                                チェックをつけると部屋の URL を知らない人にもログを公開します(未実装)。
-                                あとで変えられます。
-                            br
-                            br
-                            button#create-room.btn(type='button') 部屋を作る
+                p パラメータは後から変更できます。
 
-        #outputpart.row(style='display:none;')
-            .span12
+                form.form-horizontal(role="form")
+                    div.form-group
+                        label.col-xs-2.control-label(for="roomName") 名前
+                        div.col-xs-7
+                            input#roomName.form-control(type="text", maxlength="#{nameLengthMax}",
+                                placeholder="#{nameLengthMax}文字以内")
+                    div.form-group
+                        label.col-xs-2.control-label(for="roomWidth") キャンバスの幅
+                        div.col-xs-7
+                            input#roomWidth.form-control(type="number", min="#{widthMin}", max="#{widthMax}",
+                                placeholder="#{widthMin}～#{widthMax}ピクセル  実際のサイズは枠線で +2 されます。")
+                    div.form-group
+                        label.col-xs-2.control-label(for="roomHeight") キャンバスの高さ
+                        div.col-xs-7
+                            input#roomHeight.form-control(type="number", min="#{heightMin}", max="#{heightMax}",
+                                placeholder="#{heightMin}～#{heightMax}ピクセル  実際のサイズは枠線とツールバーで +30 されます。")
+                    div.form-group
+                        label.col-xs-2.control-label(for="roomIsLogOpen") ログを公開する
+                        div.col-xs-8
+                            label.checkbox
+                                input#roomIsLogOpen(type="checkbox")
+                                チェックをつけると部屋のURLを知らない人にもログを公開します(未実装)
+                            br
+                            br
+                            button#createRoom.btn.btn-primary(type="button") 部屋を作る
+        // (style='display: none;')
+        div#outputpart.row
+            div.col-xs-12
                 h2 あなたの部屋
                 h3 URL
-                p
-                    直接開く場合はこちらの URL にアクセスしてください。
-                input#url.input.span12(type='text', readonly='readonly', onClick='this.select();')
+                p 直接開く場合はこちらのURLにアクセスしてください。
+                div.col-xs-12
+                    div.input-group
+                        input#url.form-control.col-xs-12(type='text', readonly='readonly')
+                        span.input-group-btn
+                            button#urlSelect.btn.btn-default(type="button") 選択
+                            button#urlOpen.btn.btn-default(type="button") 開く
+                br
+                br
                 h3 設定変更用URL
                 p
-                    span(style='color: red;') ●必ず読んでください！<br />
-                    この URL では部屋の名前やサイズなどを変更できます。<br />
-                    本来はちゃんとした認証をするべきなのですが、暗号化通信の実装とかいろいろ間に合わなかったので、<br />
-                    開き直って部屋の作成者しか知りえない専用の URL を発行することでパスワードの代わりにしています。<br />
-                    忘れずにブックマークをお願いします。<br />
-                    うっかり配信画面などに映してしまった場合はもう一度部屋を作りなおしてください……
-                input#configurl.input.span12(type='text', readonly='readonly', onClick='this.select();')
+                    このURLでは部屋の名前やサイズなどを変更できます。
+                    br
+                    span(style='color: red;')パスワードのようなものなので、他の人に知られないようにしてください。
+                div.col-xs-12
+                    div.input-group
+                        input#configUrl.form-control.col-xs-12(type='text', readonly='readonly')
+                        span.input-group-btn
+                            button#configUrlSelect.btn.btn-default(type="button") 選択
+                            button#configUrlOpen.btn.btn-default(type="button") 開く
+                br
+                br
                 h3 埋め込み用タグ
                 p
-                    掲示板などに埋め込む場合はこちらのタグを埋め込んでください。
-                input#tag.input.span12(type='text', readonly='readonly', onClick='this.select();')
+                    掲示板などに埋め込む際はこちらのタグを使用してください。
+                div.col-xs-12
+                    div.input-group
+                        input#tag.form-control.col-xs-12(type='text', readonly='readonly')
+                        span.input-group-btn
+                            button#tagSelect.btn.btn-default(type="button") 選択
 
-        .row
-            .span12
-                a(name='help')
-                h2 サンプルと使い方
-                作成中……
+        div.row
+            div.col-xs-12
+                h2 使い方
+                準備中……
+
+        div.row
+            div.col-xs-12
+                h2 お問い合わせ
+                p
+                    a(href="https://twitter.com/rgx_6") @rgx_6
+                    | まで

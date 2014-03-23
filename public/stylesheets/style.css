@@ -74,7 +74,6 @@
     cursor: pointer;
 }
 
-/* TODO : デフォルトの色も見やすい色に変更したい */
 #color1 { background-color: #000000; }
 #color2 { background-color: #ffffff; }
 #color3 { background-color: #ff0000; }
@@ -143,7 +142,7 @@
  * 部屋接続数
  */
 .userCount {
-    /* TODO 仮 */
+    /* todo : 仮 */
     display: block;
     float: left;
     width: 20px;

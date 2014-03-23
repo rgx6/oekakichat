@@ -1,26 +1,32 @@
 (function () {
     // 'use strict';
-    
+
     $(document).ready(function () {
         // 'use strict';
-        
+
+        //------------------------------
+        // 定数
+        //------------------------------
+
+        var RESULT_OK        = 'ok';
+        var RESULT_BAD_PARAM = 'bad param';
+
         //------------------------------
         // 変数
         //------------------------------
-        
-        // socketオブジェクト
+
         var socket;
         // お絵かきデータの定期送信用タイマーオブジェクト
         var timer;
         // お絵かきデータの送信間隔(ミリ秒)
         var setTimeoutMillisecond = 500;
-        
+
         // お絵かきの変数
         // 描画する始点のX座標
         var startX;
         // 描画する始点のY座標
         var startY;
-        // TODO : color/widthの初期化は別の場所でやる？
+        // todo : color/widthの初期化は別の場所でやる？
         // 描画する色
         var color = '#000000';
         // 描画する線の太さ
@@ -39,128 +45,127 @@
         var buffer = [];
         // お絵かきデータ送信用のタイマーがセットされているか
         var buffering = false;
-        
+
         // 保存とクリアの連打防止
         var saveClearEnabled = true;
         var saveClearInterval = 10000;
-        
+
         // 操作可否フラグ
         var isDisabled = true;
-        
+
         // サムネイルのサイズ
         var thumbnailSize = 150;
-        
+
         // 部屋接続数
         var userCount = 0;
         // 全体の接続数
-        var globalUserCount = 0;
-        
+        var roomsUserCount = 0;
+
         //------------------------------
         // 準備
         //------------------------------
-        
-        // Canvas 対応確認
+
         if (!canvas.getContext) {
             alert('ブラウザがCanvasに対応してないよ(´・ω・｀)');
             return;
-        } else {
-            context = canvas.getContext('2d');
-            context.lineCap = 'round';
-            context.lineJoin = 'round';
-            
-            cursorContext = cursorCanvas.getContext('2d');
-            
-            brushContext = brushCanvas.getContext('2d');
-            brushContext.lineCap = 'round';
-            brushContext.lineJoin = 'round';
         }
-        
+
+        context = canvas.getContext('2d');
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+
+        cursorContext = cursorCanvas.getContext('2d');
+
+        brushContext = brushCanvas.getContext('2d');
+        brushContext.lineCap = 'round';
+        brushContext.lineJoin = 'round';
+
         // ブラシサイズ初期化
         $('#brushSizeRange').val(drawWidth);
         drawBrushSize();
-        
+
         // パレット選択色初期化
         changePalletSelectedBorderColor();
-        
+
         // Interactive Color Picker の初期化
         fixGradientImg();
         new dragObject('arrows', 'hueBarDiv', arrowsLowBounds, arrowsUpBounds, arrowsDown, arrowsMoved, endMovement);
         new dragObject('circle', 'gradientBox', circleLowBounds, circleUpBounds, circleDown, circleMoved, endMovement);
-        
+
         // serverに接続
         socket = io.connect();
-        
+
         //------------------------------
         // メッセージハンドラ定義
         //------------------------------
-        
+
         /**
-         * 接続できたら部屋のidを送って入室する
+         * 入室リクエスト
          */
         socket.on('connected', function () {
             'use strict';
             // console.log('connected');
-            
-            socket.emit('enter room', getRoomId(), function (res) {
+
+            socket.emit('enter room', getIdFromUrl(), function (res) {
                 'use strict';
-                // console.log('enter room');
-                
-                if (res.result === 'bad param') {
+                // console.log('enter room callback');
+
+                if (res.result === RESULT_BAD_PARAM) {
                     alert('不正なパラメータです');
-                } else if (res.result === 'ok') {
+                } else if (res.result === RESULT_OK) {
                     clearCanvas();
-                    for (var i = 0; i < res.data.length; i += 1) {
-                        drawData(res.data[i]);
-                    }
+                    res.imageLog.forEach(function (data) {
+                        drawData(data);
+                    });
                     isDisabled = false;
                 } else {
                     alert('予期しないエラーです');
                 }
             });
         });
-        
+
         /**
          * お絵かきデータの差分を受け取る
          */
         socket.on('push image', function (data) {
             'use strict';
             // console.log('push image');
-            
+
             drawData(data);
         });
-        
+
         /**
          * 部屋への接続数を受け取る
          */
         socket.on('update user count', function (data) {
             'use strict';
             // console.log('update user count');
-            
+
             userCount = data;
-            $('#userCount').text(userCount + '/' + globalUserCount);
+            $('#userCount').text(userCount + '/' + roomsUserCount);
         });
-        
+
         /**
          * 全体の接続数を受け取る
          */
-        socket.on('update global user count', function (data) {
+        socket.on('update rooms user count', function (data) {
             'use strict';
-            // console.log('update global user count');
-            
-            globalUserCount = data;
-            $('#userCount').text(userCount + '/' + globalUserCount);
+            // console.log('update rooms user count');
+
+            roomsUserCount = data;
+            $('#userCount').text(userCount + '/' + roomsUserCount);
         });
-        
+
         /**
          * canvasをクリアする
          */
         socket.on('push clear canvas', function () {
             'use strict';
             // console.log('push clear canvas');
-            
+
             clearCanvas();
         });
-        
+
         //------------------------------
         // Canvas イベントハンドラ
         //------------------------------
@@ -173,7 +178,7 @@
             // console.log('mouse down');
             e.stopPropagation();
             if (isDisabled) return;
-            
+
             if ($('#spuit').is(':checked')) {
                 startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
                 startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
@@ -182,7 +187,7 @@
                 var g = spuitImage.data[1];
                 var b = spuitImage.data[2];
                 color = 'Rgb(' + r +','+ g + ',' + b +')';
-                
+
                 $('#pallet>div.selectedColor').css('background-color', color);
                 changePalletSelectedBorderColor();
             } else {
@@ -193,11 +198,8 @@
                 drawPoint(startX, startY, drawWidth, c);
                 pushBuffer('point', drawWidth, c, { x: startX, y: startY });
             }
-            
-            // Chromeで描画中のマウスカーソルが I になるのを防ぐ。
-            return false;
         });
-        
+
         /**
          * Canvas MouseMove イベント
          */
@@ -206,7 +208,7 @@
             // console.log('mouse move');
             e.stopPropagation();
             if (isDisabled) return;
-            
+
             if (drawFlag) {
                 var endX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
                 var endY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
@@ -217,7 +219,7 @@
                 startY = endY;
             }
         });
-        
+
         /**
          * Canvas MouseUp イベント
          */
@@ -226,10 +228,10 @@
             // console.log('mouse up');
             e.stopPropagation();
             if (isDisabled) return;
-            
+
             drawFlag = false;
         });
-        
+
         /**
          * Canvas MouseLeave イベント
          */
@@ -238,28 +240,10 @@
             // console.log('mouse leave');
             e.stopPropagation();
             if (isDisabled) return;
-            
+
             drawFlag = false;
         });
-        
-        /**
-         * Canvas MouseEnter イベント
-         */
-        $('#cursorCanvas').mouseenter(function (e) {
-            'use strict';
-            // console.log('mouse enter');
-            e.stopPropagation();
-            if (isDisabled) return;
-            
-            if (buttonIsDown(e)) {
-                drawFlag = true;
-                startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
-                startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
-                drawPoint(startX, startY, drawWidth, color);
-                pushBuffer('point', drawWidth, color, { x: startX, y: startY });
-            }
-        });
-        
+
         /**
          * マウスポインタの位置にペン先を表示する
          */
@@ -267,9 +251,11 @@
             'use strict';
             // console.log('mouse move');
             e.stopPropagation();
-            
+
             cursorContext.clearRect(0, 0, $('#cursorCanvas').width(), $('#mainCanvas').height());
-            
+
+            if ($('#spuit').is(':checked')) return;
+
             var c = $('#brush').is(':checked') ? color : '#ffffff';
             startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
             startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
@@ -283,35 +269,21 @@
             'use strict';
             // console.log('mouse leave');
             e.stopPropagation();
-            
+
             cursorContext.clearRect(0, 0, $('#cursorCanvas').width(), $('#mainCanvas').height());
         });
-        
+
         //------------------------------
         // その他 イベントハンドラ
         //------------------------------
-        
-        /**
-         * 要素の選択をキャンセルする
-         */
-        // $('body').on('selectstart', function () {
+
+        // todo : 太さ選択方法変わったら要らなくなる
+        // $('#brushSizeRange').on('mousedown', function (e) {
         //     'use strict';
-        //     // console.log('body selectstart');
-        //     return false;
+        //     // console.log('#brushSizeRange mousedown');
+        //     e.stopPropagation();
         // });
-        // $('body').on('mousedown', function () {
-        //     'use strict';
-        //     // console.log('body mousedown');
-        //     return false;
-        // });
-        
-        // TODO : 太さ選択方法変わったら要らなくなる
-        $('#brushSizeRange').on('mousedown', function (e) {
-            'use strict';
-            // console.log('#brushSizeRange mousedown');
-            e.stopPropagation();
-        });
-        
+
         /**
          * パレットをクリックで色選択
          */
@@ -319,18 +291,18 @@
             'use strict';
             // console.log('#pallet>div click');
             e.stopPropagation();
-            
+
             $('#pallet>div.selectedColor').removeClass('selectedColor');
             $(this).addClass('selectedColor');
-            
+
             $('#pallet>div').css('border-color', $('#toolbar').css('background-color'));
             changePalletSelectedBorderColor();
             color = $(this).css('background-color');
-            
+
             // Interactive Color Picker 表示中に色を変更した場合に元の色を同期させる
             $('.staticColorFixed').css('background-color', $(this).css('background-color'));
         });
-        
+
         /**
          * パレットをダブルクリックで Interactive Color Picker を表示
          */
@@ -338,14 +310,14 @@
             // 'use strict';
             // console.log('#pallet>div dblclick');
             e.stopPropagation();
-            
+
             isDisabled = true;
             $('.staticColorFixed').css('background-color', $(this).css('background-color'));
             $(this).css('background-color').match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
             // $によるmatchした部分の参照は直後じゃないと正しく動作しないっぽい
             currentColor = Colors.ColorFromRGB(RegExp.$1, RegExp.$2, RegExp.$3);
             colorChanged('box');
-            
+
             // Interactive Color Picker の表示位置を調整
             var left = $('#pallet>div:first-child').offset().left;
             var top = $(this).offset().top + $(this).height() + 4;
@@ -354,7 +326,7 @@
             // Interactive Color Picker 表示
             $('#cp').css('display', '');
         });
-        
+
         /**
          * Interactive Color Picker 色を決定
          */
@@ -362,26 +334,26 @@
             'use strict';
             // console.log('#cpOK click');
             e.stopPropagation();
-            
+
             isDisabled = false;
-            
+
             var r = parseInt($('#redBox').val(), 10);
             var g = parseInt($('#greenBox').val(), 10)
             var b = parseInt($('#blueBox').val(), 10)
             // NaNチェック
             if (r !== r || g !== g || b !== b) return;
-            
+
             var red = ('0' + r.toString(16)).slice(-2);
             var green = ('0' + g.toString(16)).slice(-2);
             var blue = ('0' + b.toString(16)).slice(-2);
             color = '#' + red + green + blue;
             $('#pallet>div.selectedColor').css('background-color', color);
             changePalletSelectedBorderColor();
-            
+
             // Interactive Color Picker 非表示
             $('#cp').css('display', 'none');
         });
-        
+
         /**
          * Interactive Color Picker キャンセル
          */
@@ -389,12 +361,12 @@
             'use strict';
             // console.log('#cpCancel click');
             e.stopPropagation();
-            
+
             isDisabled = false;
-            
+
             $('#cp').css('display', 'none');
         });
-        
+
         /**
          * ペン 太さ変更
          */
@@ -402,11 +374,11 @@
             'use strict';
             // console.log('#width change');
             e.stopPropagation();
-            
+
             drawWidth = $('#brushSizeRange').val();
             drawBrushSize();
         });
-        
+
         /**
          * 保存ボタンをクリック
          */
@@ -415,20 +387,20 @@
             // console.log('#save click');
             e.stopPropagation();
             if (isDisabled) return;
-            
+
             if (saveClearEnabled) {
                 // 描画不可
                 isDisabled = true;
-                
+
                 // 連打不可
                 saveClearEnabled = false;
                 setTimeout(function () {saveClearEnabled = true;}, saveClearInterval);
-                
+
                 // 送信
                 socket.emit('save canvas', { png: getPng(), thumbnailPng: getThumbnailPng() }, function (res) {
                         'use strict';
                         // console.log('save canvas');
-                        
+
                         if (res.result === 'ok') {
                             alert('保存に成功しました');
                         } else {
@@ -440,7 +412,7 @@
                 alert('保存とクリアは' + saveClearInterval / 1000 + '秒に1回までです');
             }
         });
-        
+
         /**
          * クリアボタンをクリック
          */
@@ -449,7 +421,7 @@
             // console.log('#clear click');
             e.stopPropagation();
             if (isDisabled) return;
-            
+
             if (saveClearEnabled) {
                 if (window.confirm(
                     '絵を保存してキャンバスをクリアしますか？\n' +
@@ -457,19 +429,19 @@
                     // bufferを破棄
                     buffer.length = 0;
                     buffering = false;
-                    
+
                     // 描画不可
                     isDisabled = true;
-                    
+
                     // 連打不可
                     saveClearEnabled = false;
                     setTimeout(function () {saveClearEnabled = true;}, saveClearInterval);
-                    
+
                     // 送信
                     socket.emit('clear canvas', { png: getPng(), thumbnailPng: getThumbnailPng() }, function (res) {
                         'use strict';
                         // console.log('clear canvas');
-                        
+
                         if (res.result === 'ok') {
                             // do nothing
                         } else {
@@ -482,7 +454,7 @@
                 alert('保存とクリアは' + saveClearInterval / 1000 + '秒に1回までです');
             }
         });
-        
+
         /**
          * ログボタンをクリック
          */
@@ -490,10 +462,10 @@
             'use strict';
             // console.log('#log click');
             e.stopPropagation();
-            
-            window.open('/oekakichat/' + getRoomId() + '/log/1/');
+
+            window.open('/' + getIdFromUrl() + '/log/1/');
         });
-        
+
         /**
          * ヘルプボタンをクリック
          */
@@ -501,47 +473,33 @@
             'use strict';
             // console.log('#help click');
             e.stopPropagation();
-            
-            window.open('/oekakichat/#help');
+
+            // todo : 実装
+            // window.open('/#help');
         });
-        
+
         //------------------------------
         // 関数
         //------------------------------
-        
+
         /**
          * URLから部屋のIDを取得する
          */
-        function getRoomId () {
+        function getIdFromUrl () {
             'use strict';
-            // console.log('getRoomId');
-            
-            location.href.match(/\/oekakichat\/([0-9a-f]{32})\//);
+            // console.log('getIdFromUrl');
+
+            location.href.match(/\/([0-9a-f]{32})\//);
             return RegExp.$1;
         }
-        
-        /**
-         * マウス左クリック検出関数
-         */
-        function buttonIsDown (e) {
-            'use strict';
-            // console.log('buttonIsDown');
-            
-            if (typeof e.buttons !== 'undefined' &&
-                e.buttons !== null) {
-                return e.buttons === 1;
-            } else {
-                return e.which > 0;
-            }
-        }
-        
+
         /**
          * パレットの選択色の枠の色を設定する
          */
         function changePalletSelectedBorderColor () {
             'use strict';
             // console.log('changePalletBorderColor');
-            
+
             var tempColor;
             $('#pallet>div.selectedColor').css('background-color').match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
             if (Number(RegExp.$1) + Number(RegExp.$2) + Number(RegExp.$3) < 383) {
@@ -551,19 +509,19 @@
             }
             $('#pallet>div.selectedColor').css('border-color', tempColor);
         }
-        
+
         /**
          * ブラシサイズ変更時に表示を更新する
          */
         function drawBrushSize () {
             'use strict';
             // console.log('drawBrushSize');
-            
+
             brushContext.fillStyle = '#ffffff';
             brushContext.beginPath();
             brushContext.fillRect(0, 0, $('#brushSizeCanvas').width(), $('#brushSizeCanvas').height());
             brushContext.stroke();
-            
+
             // IEとChromeではlineToで点を描画できないようなので、多少ぼやけるがarcを使う。
             var x = 13;
             var y = 13;
@@ -573,14 +531,14 @@
             brushContext.arc(x, y, drawWidth / 2, 0, Math.PI * 2, false);
             brushContext.fill();
         }
-        
+
         /**
          * 受け取ったお絵かきデータを描画メソッドに振り分ける
          */
         function drawData (data) {
             'use strict';
             // console.log('drawData');
-            
+
             for (var i = 0; i < data.length; i += 1) {
                 var width = data[i].width;
                 var color = data[i].color;
@@ -595,14 +553,14 @@
                 }
             }
         }
-        
+
         /**
          * Canvas 線分を描画する
          */
         function drawLine (x, y, width, color) {
             'use strict';
             // console.log('drawLine');
-            
+
             var offset = drawWidth % 2 === 0 ? 0 : 0.5;
             context.strokeStyle = color;
             context.fillStyle = color;
@@ -614,7 +572,7 @@
             }
             context.stroke();
         }
-        
+
         /**
          * Canvas 点を描画する
          */
@@ -629,25 +587,25 @@
             context.arc(x, y, width / 2, 0, Math.PI * 2, false);
             context.fill();
         }
-        
+
         /**
          * Canvas クリア
          */
         function clearCanvas () {
             'use strict';
             // console.log('#clearCanvas');
-            
+
             context.fillStyle = '#ffffff';
             context.fillRect(0, 0, $('#mainCanvas').width(), $('#mainCanvas').height());
         }
-        
+
         /**
          * お絵かき情報をbufferに溜める
          */
         function pushBuffer (type, width, color, data) {
             'use strict';
             // console.log('pushBuffer');
-            
+
             if (buffer.length > 0 &&
                 buffer.slice(-1)[0].width === width &&
                 buffer.slice(-1)[0].color === color) {
@@ -673,47 +631,47 @@
                         y: [ [data.y] ] });
                 }
             }
-            
+
             if (!buffering) {
                 // console.log('buffering');
-                
+
                 buffering = true;
                 timer = setTimeout(function () { sendImage(); }, setTimeoutMillisecond);
             }
         }
-        
+
         /**
          * bufferを送信する
          */
         function sendImage () {
             'use strict';
             // console.log('sendImage');
-            
+
             socket.emit('send image', buffer);
             buffer.length = 0;
             buffering = false;
         }
-        
+
         /**
          * 画像DataUrl取得メソッド
          */
         function getPng () {
             'use strict';
             // console.log('getPng');
-            
+
             var dataUrl = canvas.toDataURL('image/png');
             return dataUrl.split(',')[1];
         }
-        
+
         /**
          * サムネイル画像DataUrl取得メソッド
          */
         function getThumbnailPng () {
             'use strict';
             // console.log('getThumbnailPng');
-            
+
             var thumbnailCanvas = document.createElement('canvas');
-            
+
             var rate;
             if (canvas.width >= canvas.height) {
                 rate = canvas.width / thumbnailSize;
@@ -724,10 +682,10 @@
                 thumbnailCanvas.width = Math.floor(canvas.width / rate);
                 thumbnailCanvas.height = thumbnailSize;
             }
-            
+
             var thumbnailContext = thumbnailCanvas.getContext('2d');
             thumbnailContext.drawImage(canvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
-            
+
             var dataUrl = thumbnailCanvas.toDataURL('image/png');
             return dataUrl.split(',')[1];
         }

@@ -1,161 +1,175 @@
-var server = require('../server.js');
+var log4js = require('log4js');
+var logger = log4js.getLogger('OekakiDengon');
+var db = require('../sockets/db.js');
 var chatapp = require('../sockets/app.js');
 
-// タイトル
-var appTitle = 'お絵かきチャット';
-
+//------------------------------
 // 定数
-var nameMax = chatapp.nameLengthLimit;
-var widthMin = chatapp.widthMin;
-var widthMax = chatapp.widthMax;
-var heightMin = chatapp.heightMin;
-var heightMax = chatapp.heightMax;
+//------------------------------
+
+var APP_TITLE = 'お絵かきチャット';
+
+var TYPE_UNDEFINED = 'undefined';
+
+var NAME_LENGTH_LIMIT = chatapp.NAME_LENGTH_LIMIT;
+var WIDTH_MIN         = chatapp.WIDTH_MIN;
+var WIDTH_MAX         = chatapp.WIDTH_MAX;
+var HEIGHT_MIN        = chatapp.HEIGHT_MIN;
+var HEIGHT_MAX        = chatapp.HEIGHT_MAX;
+
+var ITEMS_PER_LOG_PAGE = 20;
 
 // エラーメッセージ
-var msgSystemError = 'システムエラー(´・ω・｀)';
-var msgInvalidUrl = 'そんなページないよ(´・ω・｀)';
-var msgRoomNotExist = 'そんな部屋ないよ(´・ω・｀)';
-var msgRoomDisabled = 'お絵かきチャット停止中(´・ω・｀)';
-var msgLogDisabled = 'ログ閲覧停止中(´・ω・｀)';
+var msgSystemError      = '(´・ω・｀)システムエラー';
+var msgInvalidUrl       = '(´・ω・｀)不正なURL';
+var msgRoomNotExists    = '(´・ω・｀)存在しない部屋';
+var msgChatNotAvailable = '(´・ω・｀)お絵かきチャット停止中';
+var msgLogNotAvailable  = '(´・ω・｀)ログ閲覧停止中';
 
-/**
- * routing
- */
+//------------------------------
+// routing
+//------------------------------
 
-/**
- * トップページ
- */
 exports.index = function (req, res) {
     'use strict';
 
     res.render('index', {
-        title:     appTitle,
-        nameMax:   nameMax,
-        widthMin:  widthMin,
-        widthMax:  widthMax,
-        heightMin: heightMin,
-        heightMax: heightMax });
+        title:         APP_TITLE,
+        nameLengthMax: NAME_LENGTH_LIMIT,
+        widthMin:      WIDTH_MIN,
+        widthMax:      WIDTH_MAX,
+        heightMin:     HEIGHT_MIN,
+        heightMax:     HEIGHT_MAX,
+    });
 };
 
-/**
- * 部屋
- */
 exports.room = function (req, res) {
     'use strict';
-    
-    // ID Validation Check
-    if (typeof req.params.id === 'undefined' ||
-        req.params.id === null ||
-        req.params.id.length !== 32) {
-        res.render('error', { title: appTitle, message: msgInvalidUrl });
+
+    var id = req.params.id;
+
+    if (isUndefinedOrNull(id) ||
+        id.length !== 32) {
+        res.status(400).render('error', {
+            title:   APP_TITLE,
+            message: msgInvalidUrl,
+        });
         return;
     }
-    
-    // 部屋情報取得
-    server.db.rooms.find({ id: req.params.id }, function (err, docs) {
-        // 取得失敗
-        if (err !== null) {
-            console.log(err);
-            res.render('error', { title: appTitle, message: msgSystemError });
+
+    var query = db.Room.findOne({ roomId: id });
+    query.exec(function (err, doc) {
+        if (err) {
+            logger.error(err);
+            res.status(500).render('error', {
+                title:   APP_TITLE,
+                message: msgSystemError,
+            });
             return;
         }
-        // 存在しない
-        if (docs.length === 0) {
-            res.render('error', { title: appTitle, message: msgRoomNotExist });
+
+        if (!doc) {
+            logger.warn('room not exists : ' + id);
+            res.status(404).render('error', {
+                title:   APP_TITLE,
+                message: msgRoomNotExists,
+            });
             return;
         }
-        // 利用不可
-        if (!docs[0].isChatEnabled) {
-            res.render('error', { title: appTitle, message: msgRoomDisabled });
-            return;
+
+        if (!doc.isChatAvailable) {
+            logger.warn('chat not available : ' + id);
+            res.status(403).render('error', {
+                title:   APP_TITLE,
+                message: msgChatNotAvailable,
+            });
         }
-        
+
         res.render('room', {
-            title:  docs[0].name + ' - ' + appTitle,
-            id:     req.params.id,
-            width:  docs[0].width - 0,
-            height: docs[0].height - 0
+            title:  doc.name + ' - ' + APP_TITLE,
+            id:     id,
+            width:  doc.width,
+            height: doc.height,
         });
     });
 };
 
-/**
- * ログ
- */
 exports.log = function (req, res) {
     'use strict';
-    
-    // ID Validation Check
-    if (typeof req.params.id === 'undefined' ||
-        req.params.id === null ||
-        req.params.id.length !== 32) {
-        res.render('error', { title: appTitle, message: msgInvalidUrl });
+
+    var id = req.params.id;
+    var page = req.params.page;
+
+    if (isUndefinedOrNull(id)   || id.length !== 32 ||
+        isUndefinedOrNull(page) || !page.match(/^[1-9][0-9]*$/)) {
+        res.status(400).render('error', {
+            title:   APP_TITLE,
+            message: msgInvalidUrl,
+        });
         return;
     }
-    // ページ指定チェック
-    if (typeof req.params.page === 'undefined' ||
-        req.params.page === null ||
-        !req.params.page.match(/^[1-9][0-9]*$/)) {
-            res.render('error', { title: appTitle, message: msgInvalidUrl });
-    }
-    
-    // 部屋情報取得
-    server.db.rooms.find({ id: req.params.id }, function (err, docs) {
-        // 取得失敗
-        if (err !== null) {
-            console.log(err);
-            res.render('error', { title: appTitle, message: msgSystemError });
-            return;
-        }
-        // 存在しない
-        if (docs.length === 0) {
-            res.render('error', { title: appTitle, message: msgRoomNotExist });
-            return;
-        }
-        // 利用不可
-        if (!docs[0].isLogEnabled) {
-            res.render('error', { title: appTitle, message: msgLogDisabled });
-            return;
-        }
-        
-        var roomName = docs[0].name;
-        
-        // ログ情報取得
-        server.db.logs.find({ id: req.params.id }, function (err, docs) {
-            // 取得失敗
-            if (err !== null) {
-                console.log(err);
-                res.render('error', { title: appTitle, message: msgSystemError });
-                return;
-            }
-            
-            var itemsPerPage = 20;
-            var totalPageCount = Math.ceil(docs.length / itemsPerPage);
-            if (req.params.page < 1 || totalPageCount < req.params.page) {
-                res.render('error', { title: appTitle, message: msgInvalidUrl });
-                return;
-            }
-            
-            var fileList = docs.map(function (x) { return x.filename });
-            fileList.sort(function (a, b) {
-                if (a > b) return -1;
-                if (a < b) return 1;
-                return 0;
+
+    var query = db.Room.findOne({ roomId: id });
+    query.exec(function (err, roomDoc) {
+        if (err) {
+            logger.error(err);
+            res.status(500).render('error', {
+                title:   APP_TITLE,
+                message: msgSystemError,
             });
-            
+            return;
+        }
+
+        if (!roomDoc) {
+            logger.warn('room not exists : ' + id);
+            res.status(404).render('error', {
+                title:   APP_TITLE,
+                message: msgRoomNotExists,
+            });
+            return;
+        }
+
+        if (!roomDoc.isLogAvailable) {
+            logger.warn('log not available : ' + id);
+            res.status(403).render('error', {
+                title:   APP_TITLE,
+                message: msgLogNotAvailable,
+            });
+        }
+
+        var query = db.Log.find({ roomId: id, isDeleted: false }).sort({ fileName: 'desc' });
+        query.exec(function (err, logDocs) {
+            if (err) {
+                logger.error(err);
+                res.status(500).render('error', {
+                    title:   APP_TITLE,
+                    message: msgSystemError,
+                });
+                return;
+            }
+
+            var totalPageCount = Math.ceil(logDocs.length / ITEMS_PER_LOG_PAGE);
+            if (page < 1 || totalPageCount < page) {
+                res.status(400).render('error', {
+                    title:   APP_TITLE,
+                    message: msgInvalidUrl,
+                });
+                return;
+            }
+
+            var fileList = logDocs.map(function (x) { return x.fileName });
+
             // ページング処理
-            var startIndex = itemsPerPage * (req.params.page - 1);
-            var endIndex = req.params.page == totalPageCount ?
-                fileList.length :
-                itemsPerPage * req.params.page;
+            var startIndex = ITEMS_PER_LOG_PAGE * (page - 1);
+            var endIndex = page == totalPageCount ? fileList.length : ITEMS_PER_LOG_PAGE * page;
             var dispFileList = fileList.slice(startIndex, endIndex);
-            
+
             res.render('log', {
-                title:          roomName + ' - ' + appTitle,
-                name:           roomName,
+                title:          roomDoc.name + ' - ' + APP_TITLE,
+                name:           roomDoc.name,
                 files:          dispFileList,
-                page:           req.params.page,
-                totalPageCount: totalPageCount
+                page:           page,
+                totalPageCount: totalPageCount,
             });
         });
     });
@@ -165,5 +179,18 @@ exports.log = function (req, res) {
  * 部屋設定変更
  */
 exports.config = function (req, res) {
-    res.render('config', { title: appTitle, id: req.params.id, page: req.params.page });
+    res.render('config', { title: APP_TITLE, id: req.params.id, page: req.params.page });
 };
+
+//------------------------------
+// 関数
+//------------------------------
+
+/**
+ * nullとundefinedのチェック
+ */
+function isUndefinedOrNull(data) {
+    'use strict';
+
+    return typeof data === TYPE_UNDEFINED || data === null;
+}

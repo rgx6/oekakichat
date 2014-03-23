@@ -1,265 +1,325 @@
 var fs = require('fs');
 var uuid = require('node-uuid');
-var Room = require('./room.js').Room;
+var log4js = require('log4js');
+var logger = log4js.getLogger('OekakiDengon');
 var server = require('../server.js');
+var db = require('./db.js');
+var Room = require('./Room.js').Room;
 
-var nameLengthLimit = exports.nameLengthLimit = 30;
-var widthMin = exports.widthMin = 600;
-var widthMax = exports.widthMax = 2000;
-var heightMin = exports.heightMin = 300;
-var heightMax = exports.heightMax = 2000;
+var RESULT_OK                 = 'ok';
+var RESULT_BAD_PARAM          = 'bad param';
+var RESULT_SYSTEM_ERROR       = 'system error';
+var RESULT_ROOM_NOT_EXISTS    = 'room not exists';
+var RESULT_ROOM_NOT_AVAILABLE = 'room not available';
 
-var globalUserCount = 0;
+var KEY_ID = 'id';
+
+var TYPE_UNDEFINED = 'undefined';
+var TYPE_BOOLEAN   = 'boolean';
+
+var NAME_LENGTH_LIMIT = exports.NAME_LENGTH_LIMIT = 30;
+var WIDTH_MIN         = exports.WIDTH_MIN         = 600;
+var WIDTH_MAX         = exports.WIDTH_MAX         = 2000;
+var HEIGHT_MIN        = exports.HEIGHT_MIN        = 300;
+var HEIGHT_MAX        = exports.HEIGHT_MAX        = 2000;
+
+var LOGGER_INTERVAL_SECOND = 20;
 
 var rooms = {};
 
-/**
- * socket.ioのコネクション設定
- */
+var globalUserCount = 0;
+var roomsUserCount = 0;
+
+var performanceLogger = setInterval(function () {
+    logger.info('connectionCount: ' + globalUserCount + ', memoryUsage: ' + JSON.stringify(process.memoryUsage()));
+}, LOGGER_INTERVAL_SECOND * 1000);
+
+// サンプル作成
+db.Room.update({
+    roomId: '00000000000000000000000000000000'
+}, {
+    $setOnInsert: {
+        roomId:          '00000000000000000000000000000000',
+        configId:        null,
+        name:            'サンプル',
+        width:           WIDTH_MIN,
+        height:          HEIGHT_MIN,
+        isChatAvailable: true,
+        isLogAvailable:  true,
+        isLogOpen:       false,
+        registeredTime:  new Date(),
+        updatedTime:     new Date(),
+    }
+}, { upsert: true },
+function (err, numberAffected) {
+    if (err) {
+        logger.error(err);
+        return;
+    }
+});
+
 exports.onConnection = function (client) {
     'use strict';
-    // console.log('connected');
-    
+    logger.debug('connected : ' + client.id);
+
     client.emit('connected');
-    
+    globalUserCount += 1;
+
     /**
      * 部屋登録受付
      */
-    client.on('create room', function (data, fn) {
+    client.on('create room', function (data, callback) {
         'use strict';
-        // console.log('create room');
-        
-        if (typeof data === 'undefined' ||
-            data === null ||
-            !checkParamLength(data.name, nameLengthLimit) ||
-            !checkParamSize(data.width, widthMin, widthMax) ||
-            !checkParamSize(data.height, heightMin, heightMax) ||
-            typeof data.isLogOpened !== 'boolean') {
-            fn({ result: 'bad param' });
-            return;
+        logger.debug('create room : ' + client.id);
+
+        if (isUndefinedOrNull(data)           ||
+            isUndefinedOrNull(data.name)      ||
+            isUndefinedOrNull(data.width)     || isNaN(data.width)  ||
+            isUndefinedOrNull(data.height)    || isNaN(data.height) ||
+            isUndefinedOrNull(data.isLogOpen) || typeof data.isLogOpen !== TYPE_BOOLEAN) {
+            logger.warn('create room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            return callback({ result: RESULT_BAD_PARAM });
         }
-        
-        var id = uuid.v4().replace(/-/g, '');
-        var configid = uuid.v4().replace(/-/g, '');
-        
-        // TODO : sqlinjection対策
-        var date = new Date().toLocaleString();
-        var doc = {
-            id:            id,
-            configid:      configid,
-            name:          data.name,
-            width:         data.width,
-            height:        data.height,
-            isChatEnabled: true,
-            isLogEnabled:  true,
-            isLogOpened:   data.isLogOpened,
-            registered:    date,
-            updated:       date
-        };
-        server.db.rooms.insert(doc, function (err, newDoc) {
-            if (err !== null) {
-                console.log(err);
-                fn({ result: 'ng' });
-                return;
-        }});
-        
-        fn({ result: 'ok',
-             id:       id,
-             configid: configid,
-             width:    data.width,
-             height:   data.height });
+
+        var name = data.name.trim();
+        if (!checkParamLength(name, 1, NAME_LENGTH_LIMIT)     ||
+            !checkParamSize(data.width, WIDTH_MIN, WIDTH_MAX) ||
+            !checkParamSize(data.height, HEIGHT_MIN, HEIGHT_MAX)) {
+            logger.warn('create room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            return callback({ result: RESULT_BAD_PARAM });
+        }
+
+        var roomId   = uuid.v4().replace(/-/g, '');
+        var configId = uuid.v4().replace(/-/g, '');
+
+        var room = new db.Room();
+        room.roomId          = roomId;
+        room.configId        = configId;
+        room.name            = name;
+        room.width           = data.width;
+        room.height          = data.height;
+        room.isChatAvailable = true;
+        room.isLogAvailable  = true;
+        room.isLogOpen       = data.isLogOpen;
+        room.registeredTime  = new Date();
+        room.updatedTime     = new Date();
+        room.save(function (err, doc) {
+            if (err) {
+                logger.error(err);
+                return callback({ result: RESULT_SYSTEM_ERROR });
+            }
+
+            callback({
+                result:   RESULT_OK,
+                roomId:   doc.roomId,
+                configId: doc.configId,
+                width:    doc.width,
+                height:   doc.height,
+            });
+        });
     });
-    
+
     /**
      * 部屋入室受付
      */
-    client.on('enter room', function (id, fn) {
+    client.on('enter room', function (id, callback) {
         'use strict';
-        // console.log('enter room');
-        
-        if (typeof id === 'undefined' || id === null) {
-            fn({ result: 'bad param' });
-            return;
+        logger.debug('enter room : ' + client.id);
+
+        if (isUndefinedOrNull(id)) {
+            logger.warn('enter room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            return callback({ result: RESULT_BAD_PARAM });
         }
-        
-        // TODO : 念のためここでもid登録済チェック 共通化したい
-        server.db.rooms.count({ id: id }, function (err, count) {
-            if (err !== null) {
-                console.log(err);
-                fn({ result: 'ng' });
-                return;
+
+        var query = db.Room.where({ roomId: id });
+        query.findOne(function (err, doc) {
+            if (err) {
+                logger.error(err);
+                return callback({ result: RESULT_SYSTEM_ERROR });
             }
-            
-            if (count !== 1) {
-                fn({ result: 'bad param' });
-                return;
+
+            if (isUndefinedOrNull(doc)) {
+                logger.warn('enter room : ' + client.id + ' : ' + RESULT_ROOM_NOT_EXISTS);
+                return callback({ result: RESULT_ROOM_NOT_EXISTS });
             }
+
+            if (!doc.isChatAvailable) {
+                logger.warn('enter room : ' + client.id + ' : ' + RESULT_ROOM_NOT_AVAILABLE);
+                return callback({ result: RESULT_ROOM_NOT_AVAILABLE });
+            }
+
+            if (isUndefinedOrNull(rooms[id])) {
+                rooms[id] = new Room(id);
+            }
+
+            var room = rooms[id];
+
+            client.set(KEY_ID, id);
+            client.join(id);
+
+            room.userCount += 1;
+            roomsUserCount += 1;
+            updateUserCount(id);
+
+            callback({
+                result:   RESULT_OK,
+                imageLog: room.imageLog,
+            });
         });
-        
-        // 部屋オブジェクトが存在しなければ作成する
-        if (typeof rooms[id] === 'undefined' || rooms[id] === null) {
-            rooms[id] = new Room(id);
-        }
-        
-        var room = rooms[id];
-        
-        client.set('id', id);
-        client.join(id);
-        
-        room.userCount += 1;
-        globalUserCount += 1;
-        updateUserCount(id);
-        
-        fn({ result: 'ok', data: room.imagelog });
     });
-    
+
     /**
      * 描画データ受付
      */
     client.on('send image', function (data) {
         'use strict';
-        // console.log('send image');
-        
+        logger.trace('send image : ' + client.id);
+
         var id;
-        client.get('id', function (err, _id) {
+        client.get(KEY_ID, function (err, _id) {
             if (err || !_id) { return; }
             id = _id;
         });
-        
-        if (typeof rooms[id] === 'undefined' || rooms[id] === null) return;
-        
+
+        if (isUndefinedOrNull(rooms[id])) return;
+
         rooms[id].storeImage(data);
         client.broadcast.to(id).emit('push image', data);
     });
-    
+
     /**
      * Canvasを保存してクリア
      */
-    client.on('clear canvas', function (data, fn) {
+    client.on('clear canvas', function (data, callback) {
         'use strict';
-        // console.log('clear canvas');
-        
+        logger.debug('clear canvas : ' + client.id);
+
         var id;
-        client.get('id', function (err, _id) {
-            if (err || !_id) { return; }
+        client.get(KEY_ID, function (err, _id) {
+            if (err || !_id) {
+                return callback({ result: RESULT_SYSTEM_ERROR });
+            }
             id = _id;
         });
-        
-        if (typeof rooms[id] === 'undefined' || rooms[id] === null) return;
-        
-        saveImage(id, data, true, fn);
+
+        if (isUndefinedOrNull(rooms[id])) {
+            return callback({ result: RESULT_SYSTEM_ERROR });
+        }
+
+        saveImage(id, data, true, callback);
     });
-    
+
     /**
      * Canvasを保存
      */
-    client.on('save canvas', function (data, fn) {
+    client.on('save canvas', function (data, callback) {
         'use strict';
-        // console.log('save canvas');
-        
+        logger.debug('save canvas : ' + client.id);
+
         var id;
-        client.get('id', function (err, _id) {
-            if (err || !_id) { return; }
+        client.get(KEY_ID, function (err, _id) {
+            if (err || !_id) {
+                return callback({ result: RESULT_SYSTEM_ERROR });
+            }
             id = _id;
         });
-        
-        if (typeof rooms[id] === 'undefined' || rooms[id] === null) return;
-        
-        saveImage(id, data, false, fn);
+
+        if (isUndefinedOrNull(rooms[id])) {
+            return callback({ result: RESULT_SYSTEM_ERROR });
+        }
+
+        saveImage(id, data, false, callback);
     });
-    
+
     /**
      * socket切断時の処理
      */
     client.on('disconnect', function() {
         'use strict';
-        // console.log('disconnect');
-        
+        logger.debug('disconnect : ' + client.id);
+
         var id;
-        client.get('id', function (err, _id) {
+        client.get(KEY_ID, function (err, _id) {
             if (err || !_id) { return; }
             id = _id;
         });
-        
-        if (!id) { return; }
-        
+
         globalUserCount -= 1;
+
+        if (isUndefinedOrNull(rooms[id])) return;
         rooms[id].userCount -= 1;
+        roomsUserCount -= 1;
         updateUserCount(id);
-        
-        // console.log('[disconnect]' + '[id:' + id + ']');
     });
-    
+
     //------------------------------
     // メソッド定義
     //------------------------------
-    
+
     /**
      * 接続数更新
      */
     function updateUserCount (id) {
         'use strict';
-        // console.log('updateUserCount');
-        
+        logger.debug('updateUserCount');
+
         server.sockets.to(id).emit('update user count', rooms[id].userCount);
-        server.sockets.emit('update global user count', globalUserCount);
+        server.sockets.emit('update rooms user count', roomsUserCount);
     }
-    
+
     /**
      * 画像をファイルに保存する関数
      */
-    function saveImage (id, data, clearFlag, fn) {
+    function saveImage (id, data, clearFlag, callback) {
         'use strict';
-        // console.log('saveImage');
-        
-        if (typeof data === 'undefined' ||
-            data === null ||
-            typeof data.png === 'undefined' ||
-            data.png === null ||
-            typeof data.thumbnailPng === 'undefined' ||
-            data.thumbnailPng === null) {
-            fn({ result: 'bad param' });
-            return;
+        logger.debug('saveImage');
+
+        if (isUndefinedOrNull(data) ||
+            isUndefinedOrNull(data.png) ||
+            isUndefinedOrNull(data.thumbnailPng)) {
+            return callback({ result: RESULT_BAD_PARAM });
         }
-        
-        // TODO : PNGフォーマットチェック
-        
-        var filename = new Date().getTime();
-        
+
+        // todo : PNGフォーマットチェック
+
+        var fileName = new Date().getTime();
+
         // 原寸の画像を保存
         var buf = new Buffer(data.png, 'base64');
-        var path = './public/log/' + filename + '.png';
+        var path = './public/log/' + fileName + '.png';
         fs.writeFile(path, buf, function (err) {
-            if (err !== null) {
-                console.log(err);
-                fn({ result: 'ng' });
-                return;
+            if (err) {
+                logger.error(err);
+                return callback({ result: RESULT_SYSTEM_ERROR });
             }
-            
+
             // サムネイル画像を保存
             buf = new Buffer(data.thumbnailPng, 'base64');
-            path = './public/log/thumb/' + filename + '.thumb.png';
+            path = './public/log/thumb/' + fileName + '.thumb.png';
             fs.writeFile(path, buf, function (err) {
-                if (err !== null) {
-                    console.log(err);
-                    fn({ result: 'ng' });
-                    return;
+                if (err) {
+                    logger.error(err);
+                    return callback({ result: RESULT_SYSTEM_ERROR });
                 }
-                
-                // DBにIDとファイル名の対応を記録
-                server.db.logs.insert({ id: id, filename: filename }, function (err, newDoc) {
-                    if (err !== null) {
-                        console.log(err);
-                        fn({ result: 'ng' });
-                        return;
+
+                var log = new db.Log();
+                log.roomId         = id;
+                log.fileName       = fileName;
+                log.isDeleted      = false;
+                log.registeredTime = new Date();
+                log.updatedTime    = new Date();
+                log.save(function (err, doc) {
+                    if (err) {
+                        logger.error(err);
+                        return callback({ result: RESULT_SYSTEM_ERROR });
                     }
-                    
+
                     if (clearFlag) {
                         rooms[id].deleteImage();
                         server.sockets.to(id).emit('push clear canvas');
-                        fn({ result: 'ok' });
+                        return callback({ result: RESULT_OK });
                     } else {
-                        fn({ result: 'ok' });
+                        return callback({ result: RESULT_OK });
                     }
                 });
             });
@@ -276,32 +336,34 @@ exports.onConnection = function (client) {
  */
 function escapeHTML (str) {
     'use strict';
-    
-    // TODO : 足りなくない？'だったか？
+
+    // hack : 抜けている文字がないかチェック
     return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /**
- * nullとundefinedと文字数のチェック
+ * nullとundefinedのチェック
  */
-function checkParamLength (data, maxLength) {
+function isUndefinedOrNull(data) {
     'use strict';
-    
-    return typeof data !== 'undefined' &&
-           data !== null &&
-           data.length !== 0 &&
-           data.length <= maxLength;
+
+    return typeof data === TYPE_UNDEFINED || data === null;
 }
 
 /**
- * nullとundefinedと範囲のチェック
+ * 文字数のチェック
  */
-function checkParamSize (data, minSize, maxSize) {
+function checkParamLength(data, minLength, maxLength) {
     'use strict';
-    
-    return typeof data !== 'undefined' &&
-           data !== null &&
-           !isNaN(data) &&
-           minSize <= data &&
-           data <= maxSize;
+
+    return minLength <= data.length && data.length <= maxLength;
+}
+
+/**
+ * 範囲のチェック
+ */
+function checkParamSize(data, minSize, maxSize) {
+    'use strict';
+
+    return minSize <= data && data <= maxSize;
 }
