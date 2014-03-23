@@ -10,7 +10,7 @@ logger.setLevel('DEBUG');
 log4js.configure({
     'appenders': [
     // console に出力
-    { 'type': 'console' },
+    // { 'type': 'console' },
     // ファイルに出力
     {
         'type': 'file',
@@ -68,7 +68,7 @@ app.get(appRoot + 'config/:configid/', routes.config);
 var server = http.createServer(app);
 server.listen(app.get('port'), function () {
     'use strict';
-    console.log('Express server listening on port ' + app.get('port'));
+    logger.info('Express server listening on port ' + app.get('port'));
 });
 
 // 'log lever' : 0 error  1 warn  2 info  3 debug / log: false

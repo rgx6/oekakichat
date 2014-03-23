@@ -3,7 +3,7 @@
 
     $(document).ready(function () {
         'use strict';
-        console.log('ready');
+        // console.log('ready');
 
         //------------------------------
         // 定数
@@ -38,7 +38,7 @@
 
         socket.on('connected', function () {
             'use strict';
-            console.log('connected');
+            // console.log('connected');
         });
 
         //------------------------------
@@ -50,7 +50,7 @@
          */
         $('#createRoom').on('click', function () {
             'use strict';
-            console.log('#createRoom click');
+            // console.log('#createRoom click');
 
             $('#createRoom').attr('disabled', 'disabled');
 
@@ -78,7 +78,7 @@
 
             socket.emit('create room', data, function (res) {
                 'use strict';
-                console.log('create room callback');
+                // console.log('create room callback');
 
                 if (res.result === RESULT_BAD_PARAM) {
                     alert('不正なパラメータです');
@@ -88,9 +88,10 @@
                     $('#roomHeight').val('');
                     $('#roomIsLogOpen').removeAttr('checked');
 
-                    var url = location.href + res.roomId + '/';
+                    var origin = location.href.replace(/#.*/, '');
+                    var url = origin + res.roomId + '/';
                     $('#url').val(url);
-                    var configUrl = location.href + 'config/' + res.configId + '/';
+                    var configUrl = origin + 'config/' + res.configId + '/';
                     $('#configUrl').val(configUrl);
                     var tag = '<iframe src="{0}" style="border: none;" width="{1}" height="{2}" />'
                               .format(url, res.width + 2, res.height + 30);
@@ -146,7 +147,7 @@
          */
         $('#urlOpen').on('click', function (e) {
             'use strict';
-            console.log('#urlOpen click');
+            // console.log('#urlOpen click');
             e.stopPropagation();
 
             window.open($('#url').val());
@@ -157,7 +158,7 @@
          */
         $('#configUrlOpen').on('click', function (e) {
             'use strict';
-            console.log('#configUrlOpen click');
+            // console.log('#configUrlOpen click');
             e.stopPropagation();
 
             window.open($('#configUrl').val());
