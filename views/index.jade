@@ -10,10 +10,11 @@ block body
         div.jumbotron
             h1= title
 
-        div#inputpart.row
+        div.row
             div.col-xs-12
                 h2 お絵かきチャットって？
-                p こんなの↓です。サンプルなので好きなように使ってみてください。
+                p
+                    まずはサンプル↓をどうぞ。気に入ったら↓↓の部屋作成へ。
                 iframe(src="/00000000000000000000000000000000/", style="border: none;", width="#{widthMin + 2}", height="#{heightMin + 30}")
 
         div#inputpart.row
@@ -42,13 +43,14 @@ block body
                         div.col-xs-8
                             label.checkbox
                                 input#roomIsLogOpen(type="checkbox")
-                                チェックをつけると部屋のURLを知らない人にもログを公開します(未実装)
+                                チェックをつけると部屋のURLを知らない人にもログを公開します(実装予定)
                             br
                             br
                             button#createRoom.btn.btn-primary(type="button") 部屋を作る
-        // (style='display: none;')
-        div#outputpart.row
+
+        div#outputpart.row(style='display: none;')
             div.col-xs-12
+                a(name="output")
                 h2 あなたの部屋
                 h3 URL
                 p 直接開く場合はこちらのURLにアクセスしてください。
@@ -62,9 +64,9 @@ block body
                 br
                 h3 設定変更用URL
                 p
-                    このURLでは部屋の名前やサイズなどを変更できます。
+                    このURLでは部屋の名前やサイズなどを変更できます（実装中）。
                     br
-                    span(style='color: red;')パスワードのようなものなので、他の人に知られないようにしてください。
+                    span(style='color: red;')パスワードのかわりなので、他の人に知られないようにしてください。
                 div.col-xs-12
                     div.input-group
                         input#configUrl.form-control.col-xs-12(type='text', readonly='readonly')
@@ -84,6 +86,7 @@ block body
 
         div.row
             div.col-xs-12
+                a(name="help")
                 h2 使い方
                 準備中……
 

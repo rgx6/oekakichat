@@ -96,7 +96,11 @@
                               .format(url, res.width + 2, res.height + 30);
                     $('#tag').val(tag);
 
-                    $('#inputpart').slideUp(500, function () { $('#outputpart').slideDown(500); });
+                    $('#inputpart').slideUp(500, function () {
+                        $('#outputpart').slideDown(500, function () {
+                            window.location.hash = 'output';
+                        });
+                    });
                 } else {
                     alert('予期しないエラーです');
                 }
