@@ -1,9 +1,11 @@
 extends layout
 block head
-    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/flick/jquery-ui-1.10.4.custom.min.css")
     link(type="text/css", rel="stylesheet", href="/stylesheets/colorpicker.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
     script(type="application/javascript", src="/socket.io/socket.io.js")
     script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
+    script(type="application/javascript", src="/javascripts/jquery-ui-1.10.4.custom.min.js")
     script(type="application/javascript", src="/javascripts/chat.js")
     script(type="application/javascript", src="/javascripts/ColorPicker.js")
 block body
@@ -26,7 +28,7 @@ block body
                 #color7
                 #color8
             div.brushSize
-                input#brushSizeRange.brushSizeRange(type='range', min='1', max='21', step='1')
+                div#brushSizeSlider.brushSizeRange
                 canvas#brushSizeCanvas.brushSizeCanvas(width='25px', height='25px')
             div.function
                 label#save 保

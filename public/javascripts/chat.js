@@ -80,8 +80,6 @@
         brushContext.lineCap = 'round';
         brushContext.lineJoin = 'round';
 
-        // ブラシサイズ初期化
-        $('#brushSizeRange').val(drawWidth);
         drawBrushSize();
 
         // パレット選択色初期化
@@ -218,6 +216,9 @@
                 startX = endX;
                 startY = endY;
             }
+
+            // chromeで描画中にマウスカーソルがIになってしまうのでその対策
+            return false;
         });
 
         /**
@@ -277,12 +278,19 @@
         // その他 イベントハンドラ
         //------------------------------
 
-        // todo : 太さ選択方法変わったら要らなくなる
-        // $('#brushSizeRange').on('mousedown', function (e) {
-        //     'use strict';
-        //     // console.log('#brushSizeRange mousedown');
-        //     e.stopPropagation();
-        // });
+        /**
+         * 太さ変更
+         */
+        $("#brushSizeSlider").slider({
+            value: drawWidth,
+            min:   1,
+            max:   21,
+            step:  1,
+            slide: function (event, ui) {
+                drawWidth = ui.value;
+                drawBrushSize();
+            }
+        });
 
         /**
          * パレットをクリックで色選択
@@ -365,18 +373,6 @@
             isDisabled = false;
 
             $('#cp').css('display', 'none');
-        });
-
-        /**
-         * ペン 太さ変更
-         */
-        $('#brushSizeRange').on('change', function (e) {
-            'use strict';
-            // console.log('#width change');
-            e.stopPropagation();
-
-            drawWidth = $('#brushSizeRange').val();
-            drawBrushSize();
         });
 
         /**
