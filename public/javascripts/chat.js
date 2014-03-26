@@ -327,8 +327,8 @@
             colorChanged('box');
 
             // Interactive Color Picker の表示位置を調整
-            var left = $('#pallet>div:first-child').offset().left;
-            var top = $(this).offset().top + $(this).height() + 4;
+            var left = $('#pallet').position().left + 2;
+            var top = $('#pallet').height() + 3;
             $('#cp').css('left', left);
             $('#cp').css('top', top);
             // Interactive Color Picker 表示
