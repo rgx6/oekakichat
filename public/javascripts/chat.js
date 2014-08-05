@@ -31,6 +31,10 @@
         var color = '#000000';
         // 描画する線の太さ
         var drawWidth = 2;
+        // ブラシ選択時の太さを保存しておく
+        var drawWidthBrush = drawWidth;
+        // 消しゴム選択時の太さを保存しておく
+        var drawWidthEraser = drawWidth;
         // 描画中フラグ
         var drawFlag = false;
         // canvasオブジェクト
@@ -167,7 +171,7 @@
         //------------------------------
         // Canvas イベントハンドラ
         //------------------------------
-        
+
         /**
          * Canvas MouseDown イベント
          */
@@ -279,6 +283,30 @@
         //------------------------------
 
         /**
+         * ブラシボタンをクリック
+         */
+        $("#brush").on('click', function () {
+            'use strict';
+            // console.log('#brush click');
+
+            drawWidth = drawWidthBrush;
+            drawBrushSize();
+            $('#brushSizeSlider').slider('value', drawWidth);
+        });
+
+        /**
+         * 消しゴムボタンをクリック
+         */
+        $("#eraser").on('click', function () {
+            'use strict';
+            // console.log('#eraser click');
+
+            drawWidth = drawWidthEraser;
+            drawBrushSize();
+            $('#brushSizeSlider').slider('value', drawWidth);
+        });
+
+        /**
          * 太さ変更
          */
         $("#brushSizeSlider").slider({
@@ -289,6 +317,11 @@
             slide: function (event, ui) {
                 drawWidth = ui.value;
                 drawBrushSize();
+                if ($('#brush').is(':checked')) {
+                    drawWidthBrush = drawWidth;
+                } else if ($('#eraser').is(':checked')) {
+                    drawWidthEraser = drawWidth;
+                }
             }
         });
 
@@ -346,8 +379,8 @@
             isDisabled = false;
 
             var r = parseInt($('#redBox').val(), 10);
-            var g = parseInt($('#greenBox').val(), 10)
-            var b = parseInt($('#blueBox').val(), 10)
+            var g = parseInt($('#greenBox').val(), 10);
+            var b = parseInt($('#blueBox').val(), 10);
             // NaNチェック
             if (r !== r || g !== g || b !== b) return;
 
@@ -575,7 +608,7 @@
         function drawPoint (x, y, width, color) {
             'use strict';
             // console.log('drawPoint');
-            
+
             // IEとChromeではlineToで点を描画できないようなので、多少ぼやけるがarcを使う。
             context.strokeStyle = color;
             context.fillStyle = color;
