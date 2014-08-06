@@ -209,7 +209,7 @@
             'use strict';
             // console.log('mouse move');
             e.stopPropagation();
-            if (isDisabled) return;
+            if (isDisabled) return false;
 
             if (drawFlag) {
                 var endX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
@@ -292,6 +292,7 @@
             drawWidth = drawWidthBrush;
             drawBrushSize();
             $('#brushSizeSlider').slider('value', drawWidth);
+            $('#brushSizeSlider').slider('enable');
         });
 
         /**
@@ -304,6 +305,17 @@
             drawWidth = drawWidthEraser;
             drawBrushSize();
             $('#brushSizeSlider').slider('value', drawWidth);
+            $('#brushSizeSlider').slider('enable');
+        });
+
+        /**
+         * スポイトボタンをクリック
+         */
+        $('#spuit').on('click', function () {
+            'use strict';
+            console.log('#spuit click');
+
+            $('#brushSizeSlider').slider('disable');
         });
 
         /**
