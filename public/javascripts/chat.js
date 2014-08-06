@@ -11,6 +11,9 @@
         var RESULT_OK        = 'ok';
         var RESULT_BAD_PARAM = 'bad param';
 
+        var BRUSH_SIZE_MIN = 1;
+        var BRUSH_SIZE_MAX = 21;
+
         //------------------------------
         // 変数
         //------------------------------
@@ -64,6 +67,9 @@
         var userCount = 0;
         // 全体の接続数
         var roomsUserCount = 0;
+
+        // ホイール操作用ショートカットキー
+        var key_width_pressed = false;
 
         //------------------------------
         // 準備
@@ -181,7 +187,7 @@
             e.stopPropagation();
             if (isDisabled) return;
 
-            if ($('#spuit').is(':checked')) {
+            if ($('#spuit').hasClass('active')) {
                 startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
                 startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
                 var spuitImage = context.getImageData(startX, startY, 1, 1);
@@ -196,7 +202,7 @@
                 drawFlag = true;
                 startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
                 startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
-                var c = $('#brush').is(':checked') ? color : '#ffffff';
+                var c = $('#brush').hasClass('active') ? color : '#ffffff';
                 drawPoint(startX, startY, drawWidth, c);
                 pushBuffer('point', drawWidth, c, { x: startX, y: startY });
             }
@@ -214,7 +220,7 @@
             if (drawFlag) {
                 var endX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
                 var endY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
-                var c = $('#brush').is(':checked') ? color : '#ffffff';
+                var c = $('#brush').hasClass('active') ? color : '#ffffff';
                 drawLine([startX, endX], [startY, endY], drawWidth, c);
                 pushBuffer('line', drawWidth, c, { xs: startX, ys: startY, xe: endX, ye: endY });
                 startX = endX;
@@ -259,9 +265,9 @@
 
             cursorContext.clearRect(0, 0, $('#cursorCanvas').width(), $('#mainCanvas').height());
 
-            if ($('#spuit').is(':checked')) return;
+            if ($('#spuit').hasClass('active')) return;
 
-            var c = $('#brush').is(':checked') ? color : '#ffffff';
+            var c = $('#brush').hasClass('active') ? color : '#ffffff';
             startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
             startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
             cursorContext.strokeStyle = c;
@@ -289,10 +295,7 @@
             'use strict';
             // console.log('#brush click');
 
-            drawWidth = drawWidthBrush;
-            drawBrushSize();
-            $('#brushSizeSlider').slider('value', drawWidth);
-            $('#brushSizeSlider').slider('enable');
+            changeBrushMode();
         });
 
         /**
@@ -302,10 +305,7 @@
             'use strict';
             // console.log('#eraser click');
 
-            drawWidth = drawWidthEraser;
-            drawBrushSize();
-            $('#brushSizeSlider').slider('value', drawWidth);
-            $('#brushSizeSlider').slider('enable');
+            changeEraserMode();
         });
 
         /**
@@ -313,9 +313,9 @@
          */
         $('#spuit').on('click', function () {
             'use strict';
-            console.log('#spuit click');
+            // console.log('#spuit click');
 
-            $('#brushSizeSlider').slider('disable');
+            changeSpuitMode();
         });
 
         /**
@@ -323,15 +323,15 @@
          */
         $("#brushSizeSlider").slider({
             value: drawWidth,
-            min:   1,
-            max:   21,
+            min:   BRUSH_SIZE_MIN,
+            max:   BRUSH_SIZE_MAX,
             step:  1,
             slide: function (event, ui) {
                 drawWidth = ui.value;
                 drawBrushSize();
-                if ($('#brush').is(':checked')) {
+                if ($('#brush').hasClass('active')) {
                     drawWidthBrush = drawWidth;
-                } else if ($('#eraser').is(':checked')) {
+                } else if ($('#eraser').hasClass('active')) {
                     drawWidthEraser = drawWidth;
                 }
             }
@@ -519,6 +519,56 @@
             // window.open('/#help');
         });
 
+        /**
+         * キーボードショートカット
+         */
+        $(window).on('keydown keyup', function (e) {
+            'use strict';
+            // console.log('window ' + e.type + ' ' + e.keyCode);
+
+            switch(e.keyCode) {
+                case 87: // W
+                    key_width_pressed = e.type === 'keydown';
+                    break;
+            }
+        });
+        $(window).keyup(function (e) {
+            'use strict';
+            // console.log('window keyup ' + e.keyCode);
+
+            if (e.keyCode === 66) {
+                // B
+                changeBrushMode();
+            } else if (e.keyCode === 69) {
+                // E
+                changeEraserMode();
+            } else if (e.keyCode === 83) {
+                // S
+                changeSpuitMode();
+            }
+        });
+        $(window).on('wheel', function (e) {
+            'use strict';
+            // console.log('wheel');
+
+            var delta = e.originalEvent.deltaY < 0 ? 1 : -1;
+
+            if (key_width_pressed && !$('#spuit').hasClass('active')) {
+                e.preventDefault();
+                var newWidth = Number(drawWidth) + delta;
+                newWidth = Math.max(newWidth, BRUSH_SIZE_MIN);
+                newWidth = Math.min(newWidth, BRUSH_SIZE_MAX);
+                drawWidth = newWidth;
+                drawBrushSize();
+                if ($('#brush').hasClass('active')) {
+                    drawWidthBrush = drawWidth;
+                } else if ($('#eraser').hasClass('active')) {
+                    drawWidthEraser = drawWidth;
+                }
+                $('#brushSizeSlider').slider('value', drawWidth);
+            }
+        });
+
         //------------------------------
         // 関数
         //------------------------------
@@ -549,6 +599,53 @@
                 tempColor = '#000000';
             }
             $('#pallet>div.selectedColor').css('border-color', tempColor);
+        }
+
+        /**
+         * 描画モードをブラシに変更する
+         */
+        function changeBrushMode () {
+            'use strict';
+            // console.log('changeBrushMode');
+
+            $('.drawTool>label').removeClass('active');
+            $('#brush').addClass('active');
+
+            drawWidth = drawWidthBrush;
+            $('#brushSizeSlider').slider('value', drawWidth);
+            $('#brushSizeSlider').slider('enable');
+
+            drawBrushSize();
+        }
+
+        /**
+         * 描画モードを消しゴムに変更する
+         */
+        function changeEraserMode () {
+            'use strict';
+            // console.log('changeEraserMode');
+
+            $('.drawTool>label').removeClass('active');
+            $('#eraser').addClass('active');
+
+            drawWidth = drawWidthEraser;
+            $('#brushSizeSlider').slider('value', drawWidth);
+            $('#brushSizeSlider').slider('enable');
+
+            drawBrushSize();
+        }
+
+        /**
+         * 描画モードをスポイトに変更する
+         */
+        function changeSpuitMode () {
+            'use strict';
+            // console.log('changeSpuitMode');
+
+            $('.drawTool>label').removeClass('active');
+            $('#spuit').addClass('active');
+
+            $('#brushSizeSlider').slider('disable');
         }
 
         /**

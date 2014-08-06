@@ -12,12 +12,9 @@ block body
     div.outline(style='width: #{width}px; height: #{height+28}px;')
         div#toolbar.toolbar(style='width: #{width}px; height: 28px;')
             div.drawTool
-                input#brush(name='tool', type='radio', checked='checked')
-                label(for='brush') 筆
-                input#eraser(name='tool', type='radio')
-                label(for='eraser') 消
-                input#spuit(name='tool', type='radio')
-                label(for='spuit') 吸
+                label#brush.active 筆
+                label#eraser 消
+                label#spuit 吸
             div#pallet.pallet
                 #color1.selectedColor
                 #color2

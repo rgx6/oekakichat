@@ -23,10 +23,6 @@
 /**
  * 絵を書く道具
  */
-.drawTool input {
-    display: none;
-}
-
 .drawTool label {
     /* 文字とボタンの大きさ、フォント、見直し */
     /* display: block 必要かどうかよく分からない */
@@ -53,7 +49,7 @@
     color: #3498db;
 }
 
-.drawTool input[type='radio']:checked + label {
+.drawTool .active {
     background-color: #2980b9;
     color: #ffffff;
 }
