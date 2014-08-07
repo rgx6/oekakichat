@@ -61,9 +61,10 @@ app.use(function (req, res) {
 // routing
 var appRoot = '/';
 app.get(appRoot, routes.index);
+app.get(appRoot + 'help/', routes.help);
+app.get(appRoot + 'config/:configid/', routes.config);
 app.get(appRoot + ':id/', routes.room);
 app.get(appRoot + ':id/log/:page/', routes.log);
-app.get(appRoot + 'config/:configid/', routes.config);
 
 var server = http.createServer(app);
 server.listen(app.get('port'), function () {

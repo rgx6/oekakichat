@@ -1,5 +1,5 @@
 var log4js = require('log4js');
-var logger = log4js.getLogger('OekakiDengon');
+var logger = log4js.getLogger('OekakiChat');
 var db = require('../sockets/db.js');
 var chatapp = require('../sockets/app.js');
 
@@ -180,6 +180,15 @@ exports.log = function (req, res) {
  */
 exports.config = function (req, res) {
     res.render('config', { title: APP_TITLE, id: req.params.id, page: req.params.page });
+};
+
+/**
+ * ヘルプ
+ */
+exports.help = function (req, res) {
+    'use strict';
+
+    res.render('help', { title: APP_TITLE });
 };
 
 //------------------------------

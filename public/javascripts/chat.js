@@ -515,8 +515,18 @@
             // console.log('#help click');
             e.stopPropagation();
 
-            // todo : 実装
-            // window.open('/#help');
+            var dom = $('<a />');
+            dom.addClass('iframe cboxElement');
+            dom.attr('href', '/help/');
+            dom.css('display', 'none');
+            dom.colorbox({
+                iframe: true,
+                innerWidth: '550px',
+                innerHeight: '250px',
+                transition: 'none',
+                closeButton: true,
+                open: true,
+            });
         });
 
         /**

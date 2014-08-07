@@ -1,73 +1,73 @@
 /**
- * 全体の外枠
- */
+* 全体の外枠
+*/
 .outline {
-    border: solid;
-    border-width: 1px;
-    border-color: #bdc3c7;
+  border: solid;
+  border-width: 1px;
+  border-color: #bdc3c7;
 }
 
 /**
- * ツールバー
- */
+* ツールバー
+*/
 .toolbar {
-    background-color: #bdc3c7;
-    position: fixed;
-    z-index: 1;
+  background-color: #bdc3c7;
+  position: fixed;
+  z-index: 1;
 }
 
 .toolbar div {
-    float: left;
+  float: left;
 }
 
 /**
- * 絵を書く道具
- */
+* 絵を書く道具
+*/
 .drawTool label {
-    /* 文字とボタンの大きさ、フォント、見直し */
-    /* display: block 必要かどうかよく分からない */
-    /* カーソル置いた時の文字色かなにか変更したい */
-    /* ボタンの間のスペースを調整 全体とのバランスも */
-    display: block;
-    float: left;
-    cursor: pointer;
-    width: 23px;
-    height: 23px;
-    margin-top: 1px;
-    margin-right: 1px;
-    margin-left: 1px;
-    border: solid 1px #2980b9;
-    background-color: transparent;
-    color: #555e64;
-    font-size: 17px;
-    text-align: center;
-    line-height: 23px;
+  /* 文字とボタンの大きさ、フォント、見直し */
+  /* display: block 必要かどうかよく分からない */
+  /* カーソル置いた時の文字色かなにか変更したい */
+  /* ボタンの間のスペースを調整 全体とのバランスも */
+  display: block;
+  float: left;
+  cursor: pointer;
+  width: 23px;
+  height: 23px;
+  margin-top: 1px;
+  margin-right: 1px;
+  margin-left: 1px;
+  border: solid 1px #2980b9;
+  background-color: transparent;
+  color: #555e64;
+  font-size: 17px;
+  text-align: center;
+  line-height: 23px;
 }
 
 .drawTool label:hover {
-    border-color: #3498db;
-    color: #3498db;
+  border-color: #3498db;
+  color: #3498db;
 }
 
 .drawTool .active {
-    background-color: #2980b9;
-    color: #ffffff;
+  background-color: #2980b9;
+  color: #ffffff;
 }
 
 /**
- * パレット
- */
+* パレット
+*/
 .pallet {
-    margin-left: 1px;
+  margin-left: 1px;
 }
 
 .pallet>div {
-    /* ボタンと同じようにrdoにしてみる？ */
-    width: 23px;
-    height: 23px;
-    margin-top: 1px;
-    border: solid 1px #bdc3c7;
-    cursor: pointer;
+  /* ボタンと同じようにrdoにしてみる？ */
+  width: 23px;
+  height: 23px;
+  margin-top: 1px;
+  border: solid 1px #bdc3c7;
+  cursor: pointer;
 }
 
 #color1 { background-color: #000000; }
@@ -80,123 +80,174 @@
 #color8 { background-color: #00ffff; }
 
 #staticColor {
-    display: none;
+  display: none;
 }
 
 .staticColorFixed {
-	position: absolute;
-	height: 50px;
-	width: 72px;
-	top: 0px;
-	left: 73px;
+  position: absolute;
+  height: 50px;
+  width: 72px;
+  top: 0px;
+  left: 73px;
 }
 
 /**
- * ペンの太さ選択
- */
+* ペンの太さ選択
+*/
 .brushSizeRange {
-    float: left;
-    width: 50px;
-	margin-top: 6px;
-	margin-left: 13px;
-	margin-right: 15px;
+  float: left;
+  width: 50px;
+  margin-top: 6px;
+  margin-left: 13px;
+  margin-right: 15px;
 }
 
 .brushSizeCanvas {
-    float: left;
-    margin-top: 1px;
-    margin-right: 1px;
-    background-color: #ffffff;
+  float: left;
+  margin-top: 1px;
+  margin-right: 1px;
+  background-color: #ffffff;
 }
 
 /**
- * 機能
- */
+* 機能
+*/
 .function label {
-    display: block;
-    float: left;
-    cursor: pointer;
-    width: 23px;
-    height: 23px;
-    margin: 1px;
-    border: solid 1px #2980b9;
-    background-color: #2980b9;
-    color: #ffffff;
-    font-size: 17px;
-    text-align: center;
-    line-height: 23px;
+  display: block;
+  float: left;
+  cursor: pointer;
+  width: 23px;
+  height: 23px;
+  margin: 1px;
+  border: solid 1px #2980b9;
+  background-color: #2980b9;
+  color: #ffffff;
+  font-size: 17px;
+  text-align: center;
+  line-height: 23px;
 }
 
 .function label:hover {
-    border-color: #3498db;
-    background-color: #3498db;
+  border-color: #3498db;
+  background-color: #3498db;
 }
 
 /**
- * 部屋接続数
- */
+* 部屋接続数
+*/
 .userCount {
-    /* todo : 仮 */
-    display: block;
-    float: left;
-    width: 20px;
-    height: 23px;
-    margin: 1px;
-    color: #000000;
-    font-size: 15px;
-    text-align: right;
-    line-height: 23px;
+  /* todo : 仮 */
+  display: block;
+  float: left;
+  width: 20px;
+  height: 23px;
+  margin: 1px;
+  color: #000000;
+  font-size: 15px;
+  text-align: right;
+  line-height: 23px;
 }
 
 /**
- * その他
- */
+* その他
+*/
 body {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .clear {
-    clear: both;
+  clear: both;
 }
 
 /**
- * canvas
- */
+* canvas
+*/
 .mainCanvas {
-    position: absolute;
-    top: 29px;
-    left: 1px;
+  position: absolute;
+  top: 29px;
+  left: 1px;
 }
 
 table input, table td {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 /**
- * ログ
- */
+* ログ
+*/
 .logPage {
-    margin: 20px;
-    text-align: center;
+  margin: 20px;
+  text-align: center;
 }
 
 .logPage a {
-    margin-right: 30px;
+  margin-right: 30px;
 }
 
 .inactive {
-    color: #999999;
+  color: #999999;
 }
 
 .thumbnail {
-    float: left;
-    margin: 10px;
+  float: left;
+  margin: 10px;
 }
 
 .thumbnail img {
-    border: solid;
-    border-width: 1px;
-    border-color: #999999;
+  border: solid;
+  border-width: 1px;
+  border-color: #999999;
+}
+
+/**
+* ヘルプ
+*/
+
+.help {
+  width: 550px;
+  height: 250px;
+  background-color: #eeeeee;
+}
+
+.help .caption {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.help .button {
+  display: block;
+  float: left;
+  width: 23px;
+  height: 23px;
+  margin: 2px 0px 2px 5px;
+  border: solid 1px #2980b9;
+  background-color: #2980b9;
+  color: #ffffff;
+  font-size: 17px;
+  text-align: center;
+  line-height: 23px;
+}
+
+.help .desc {
+  display: block;
+  float: left;
+  height: 23px;
+  margin: 3px 15px 3px 5px;
+  font-size: 17px;
+  line-height: 23px;
+}
+
+.help .pallet :first-child {
+  margin-left: 4px;
+}
+
+.help .pallet div
+{
+  float: left;
+  width: 23px;
+  height: 23px;
+  margin: 2px 2px 2px 0px;
+  border: solid 1px #bdc3c7;
 }

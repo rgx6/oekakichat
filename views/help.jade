@@ -1,0 +1,36 @@
+extends layout
+block head
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
+block body
+    div.help
+        label.caption ボタン操作
+        div.clear
+        label.button 筆
+        label.desc ブラシ
+        label.button 消
+        label.desc 消しゴム
+        label.button 吸
+        label.desc スポイト
+        div.clear
+        label.button 保
+        label.desc サーバに画像を保存する
+        label.button 無
+        label.desc サーバに画像を保存してクリアする
+        div.clear
+        label.button log
+        label.desc ログを見る
+        div.clear
+        div.pallet
+            div#color3
+            div#color4
+            div#color5
+        label.desc クリック： 色選択　ダブルクリック： カラーパレット
+        div.clear
+        label.caption キーボードショートカット
+        div.clear
+        label.desc B： ブラシ
+        label.desc E： 消しゴム
+        label.desc S： スポイト
+        div.clear
+        label.desc W+スクロール： 太さ変更
+        div.clear
