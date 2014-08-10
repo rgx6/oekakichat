@@ -12,7 +12,7 @@ block head
     script(type="application/javascript", src="/javascripts/ColorPicker.js")
 block body
     div.outline(style='width: #{width}px; height: #{height+28}px;')
-        div#toolbar.toolbar(style='width: #{width}px; height: 28px;')
+        div#toolbar.toolbar(style='width: #{width}px; height: 28px; z-index: 100;')
             div.drawTool
                 label#brush.active 筆
                 label#eraser 消
