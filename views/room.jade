@@ -17,6 +17,7 @@ block body
                 label#brush.active 筆
                 label#eraser 消
                 label#spuit 吸
+                label#mask マ
             div#pallet.pallet
                 #color1.selectedColor
                 #color2
@@ -39,6 +40,7 @@ block body
                 label#globalUserCount.userCount
             div.clear
         div.canvas
+            canvas#combinationCanvas.mainCanvas(width='#{width}px', height='#{height}px')
             canvas#mainCanvas.mainCanvas(width='#{width}px', height='#{height}px')
             canvas#cursorCanvas.mainCanvas(width='#{width}px', height='#{height}px')
         div#cp.cp(style='display: none; position: fixed; background-color: #fff;')

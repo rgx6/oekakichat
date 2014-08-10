@@ -14,6 +14,20 @@
         var BRUSH_SIZE_MIN = 1;
         var BRUSH_SIZE_MAX = 21;
 
+        // globalCompositeOperation
+        var SOURCE_OVER = 'source-over';
+        var DESTINATION_OVER = 'destination-over';
+        var DESTINATION_OUT = 'destination-out';
+
+        var ERASE_COLOR = '#000000';
+
+        var CANVAS_OFFSET_LEFT = $('#mainCanvas').offset().left;
+        var CANVAS_OFFSET_TOP = $('#mainCanvas').offset().top;
+        var CANVAS_HEIGHT = $('#mainCanvas').height();
+        var CANVAS_WIDTH = $('#mainCanvas').width();
+        var BRUSH_SIZE_CANVAS_HEIGHT = $('#brushSizeCanvas').height();
+        var BRUSH_SIZE_CANVAS_WIDTH = $('#brushSizeCanvas').width();
+
         //------------------------------
         // 変数
         //------------------------------
@@ -29,7 +43,6 @@
         var startX;
         // 描画する始点のY座標
         var startY;
-        // todo : color/widthの初期化は別の場所でやる？
         // 描画する色
         var color = '#000000';
         // 描画する線の太さ
@@ -41,10 +54,12 @@
         // 描画中フラグ
         var drawFlag = false;
         // canvasオブジェクト
+        var combinationCanvas = $('#combinationCanvas').get(0);
         var canvas = $('#mainCanvas').get(0);
         var cursorCanvas = $('#cursorCanvas').get(0);
         var brushCanvas = $('#brushSizeCanvas').get(0);
         // contextオブジェクト
+        var combinationContext;
         var context;
         var cursorContext;
         var brushContext;
@@ -68,6 +83,9 @@
         // 全体の接続数
         var roomsUserCount = 0;
 
+        // マスクモード制御用
+        var isMaskMode = false;
+
         // ホイール操作用ショートカットキー
         var key_width_pressed = false;
 
@@ -79,6 +97,8 @@
             alert('ブラウザがCanvasに対応してないよ(´・ω・｀)');
             return;
         }
+
+        combinationContext = combinationCanvas.getContext('2d');
 
         context = canvas.getContext('2d');
         context.lineCap = 'round';
@@ -117,6 +137,8 @@
             socket.emit('enter room', getIdFromUrl(), function (res) {
                 'use strict';
                 // console.log('enter room callback');
+
+                // todo : 読み込み中表示
 
                 if (res.result === RESULT_BAD_PARAM) {
                     alert('不正なパラメータです');
@@ -187,24 +209,20 @@
             e.stopPropagation();
             if (isDisabled) return;
 
+            drawFlag = true;
+            startX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
+            startY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
             if ($('#spuit').hasClass('active')) {
-                startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
-                startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
-                var spuitImage = context.getImageData(startX, startY, 1, 1);
-                var r = spuitImage.data[0];
-                var g = spuitImage.data[1];
-                var b = spuitImage.data[2];
-                color = 'Rgb(' + r +','+ g + ',' + b +')';
-
-                $('#pallet>div.selectedColor').css('background-color', color);
+                $('#pallet>div.selectedColor').css('background-color', getColor(startX, startY));
                 changePalletSelectedBorderColor();
             } else {
-                drawFlag = true;
-                startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
-                startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
-                var c = $('#brush').hasClass('active') ? color : '#ffffff';
-                drawPoint(startX, startY, drawWidth, c);
-                pushBuffer('point', drawWidth, c, { x: startX, y: startY });
+                if ($('#brush').hasClass('active')) {
+                    drawPoint(startX, startY, drawWidth, color, isMaskMode);
+                    pushBuffer('point', drawWidth, color, { x: startX, y: startY }, isMaskMode);
+                } else {
+                    erasePoint(startX, startY, drawWidth);
+                    pushBuffer('erasePoint', drawWidth, null, { x: startX, y: startY }, null);
+                }
             }
         });
 
@@ -218,11 +236,20 @@
             if (isDisabled) return false;
 
             if (drawFlag) {
-                var endX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
-                var endY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
-                var c = $('#brush').hasClass('active') ? color : '#ffffff';
-                drawLine([startX, endX], [startY, endY], drawWidth, c);
-                pushBuffer('line', drawWidth, c, { xs: startX, ys: startY, xe: endX, ye: endY });
+                var endX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
+                var endY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
+                if ($('#spuit').hasClass('active')) {
+                    $('#pallet>div.selectedColor').css('background-color', getColor(endX, endY));
+                    changePalletSelectedBorderColor();
+                } else {
+                    if ($('#brush').hasClass('active')) {
+                        drawLine([startX, endX], [startY, endY], drawWidth, color, isMaskMode);
+                        pushBuffer('line', drawWidth, color, { xs: startX, ys: startY, xe: endX, ye: endY }, isMaskMode);
+                    } else {
+                        eraseLine([startX, endX], [startY, endY], drawWidth);
+                        pushBuffer('eraseLine', drawWidth, null, { xs: startX, ys: startY, xe: endX, ye: endY }, null);
+                    }
+                }
                 startX = endX;
                 startY = endY;
             }
@@ -263,13 +290,13 @@
             // console.log('mouse move');
             e.stopPropagation();
 
-            cursorContext.clearRect(0, 0, $('#cursorCanvas').width(), $('#mainCanvas').height());
+            cursorContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
             if ($('#spuit').hasClass('active')) return;
 
             var c = $('#brush').hasClass('active') ? color : '#ffffff';
-            startX = Math.round(e.pageX) - $('#mainCanvas').offset().left;
-            startY = Math.round(e.pageY) - $('#mainCanvas').offset().top;
+            startX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
+            startY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
             cursorContext.strokeStyle = c;
             cursorContext.fillStyle = c;
             cursorContext.beginPath();
@@ -281,7 +308,7 @@
             // console.log('mouse leave');
             e.stopPropagation();
 
-            cursorContext.clearRect(0, 0, $('#cursorCanvas').width(), $('#mainCanvas').height());
+            cursorContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         });
 
         //------------------------------
@@ -316,6 +343,16 @@
             // console.log('#spuit click');
 
             changeSpuitMode();
+        });
+
+        /**
+         * マスクボタンをクリック
+         */
+        $('#mask').on('click', function () {
+            'use strict';
+            // console.log('#mask click');
+
+            toggleMaskMode();
         });
 
         /**
@@ -438,17 +475,18 @@
                 setTimeout(function () {saveClearEnabled = true;}, saveClearInterval);
 
                 // 送信
+                combineCanvases();
                 socket.emit('save canvas', { png: getPng(), thumbnailPng: getThumbnailPng() }, function (res) {
-                        'use strict';
-                        // console.log('save canvas');
+                    'use strict';
+                    // console.log('save canvas');
 
-                        if (res.result === 'ok') {
-                            alert('保存に成功しました');
-                        } else {
-                            alert('保存に失敗しました');
-                        }
-                        isDisabled = false;
-                    });
+                    if (res.result === 'ok') {
+                        alert('保存に成功しました');
+                    } else {
+                        alert('保存に失敗しました');
+                    }
+                    isDisabled = false;
+                });
             } else {
                 alert('保存とクリアは' + saveClearInterval / 1000 + '秒に1回までです');
             }
@@ -479,6 +517,7 @@
                     setTimeout(function () {saveClearEnabled = true;}, saveClearInterval);
 
                     // 送信
+                    combineCanvases();
                     socket.emit('clear canvas', { png: getPng(), thumbnailPng: getThumbnailPng() }, function (res) {
                         'use strict';
                         // console.log('clear canvas');
@@ -555,6 +594,12 @@
             } else if (e.keyCode === 83) {
                 // S
                 changeSpuitMode();
+            } else if (e.keyCode === 67) {
+                // C
+                toggleMaskMode();
+            } else if (e.keyCode === 82) {
+                // R
+                // 下書き 予定
             }
         });
         $(window).on('wheel', function (e) {
@@ -612,13 +657,28 @@
         }
 
         /**
+         * 指定座標の色を取得する
+         */
+        function getColor(x, y) {
+            'use strict';
+            // console.log('getColor');
+
+            var spuitImage = context.getImageData(x, y, 1, 1);
+            var r = spuitImage.data[0];
+            var g = spuitImage.data[1];
+            var b = spuitImage.data[2];
+            return 'Rgb(' + r +','+ g + ',' + b +')';
+        }
+
+        /**
          * 描画モードをブラシに変更する
          */
         function changeBrushMode () {
             'use strict';
             // console.log('changeBrushMode');
 
-            $('.drawTool>label').removeClass('active');
+            $('#eraser').removeClass('active');
+            $('#spuit').removeClass('active');
             $('#brush').addClass('active');
 
             drawWidth = drawWidthBrush;
@@ -635,7 +695,8 @@
             'use strict';
             // console.log('changeEraserMode');
 
-            $('.drawTool>label').removeClass('active');
+            $('#brush').removeClass('active');
+            $('#spuit').removeClass('active');
             $('#eraser').addClass('active');
 
             drawWidth = drawWidthEraser;
@@ -652,10 +713,26 @@
             'use strict';
             // console.log('changeSpuitMode');
 
-            $('.drawTool>label').removeClass('active');
+            $('#brush').removeClass('active');
+            $('#eraser').removeClass('active');
             $('#spuit').addClass('active');
 
             $('#brushSizeSlider').slider('disable');
+        }
+
+        /**
+         * マスクの切替
+         */
+        function toggleMaskMode () {
+            'use strict';
+            // console.log('toggleMaskMode');
+
+            isMaskMode = !isMaskMode;
+            if (isMaskMode) {
+                $('#mask').addClass('active');
+            } else {
+                $('#mask').removeClass('active');
+            }
         }
 
         /**
@@ -667,7 +744,7 @@
 
             brushContext.fillStyle = '#ffffff';
             brushContext.beginPath();
-            brushContext.fillRect(0, 0, $('#brushSizeCanvas').width(), $('#brushSizeCanvas').height());
+            brushContext.fillRect(0, 0, BRUSH_SIZE_CANVAS_WIDTH, BRUSH_SIZE_CANVAS_HEIGHT);
             brushContext.stroke();
 
             // IEとChromeではlineToで点を描画できないようなので、多少ぼやけるがarcを使う。
@@ -688,15 +765,21 @@
             // console.log('drawData');
 
             for (var i = 0; i < data.length; i += 1) {
+                var mode = data[i].mode;
                 var width = data[i].width;
                 var color = data[i].color;
                 var x = data[i].x;
                 var y = data[i].y;
+                var isMaskMode = data[i].mask;
+
+                var pointMethod = mode === 'draw' ? drawPoint : erasePoint;
+                var lineMethod = mode === 'draw' ? drawLine : eraseLine;
+
                 for (var j = 0; j < x.length; j += 1) {
                     if (x[j].length === 1) {
-                        drawPoint(x[j][0], y[j][0], width, color);
+                        pointMethod(x[j][0], y[j][0], width, color, isMaskMode);
                     } else {
-                        drawLine(x[j], y[j], width, color);
+                        lineMethod(x[j], y[j], width, color, isMaskMode);
                     }
                 }
             }
@@ -705,13 +788,32 @@
         /**
          * Canvas 線分を描画する
          */
-        function drawLine (x, y, width, color) {
+        function drawLine (x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('drawLine');
 
             var offset = drawWidth % 2 === 0 ? 0 : 0.5;
+            context.globalCompositeOperation = isMaskMode ? DESTINATION_OVER : SOURCE_OVER;
             context.strokeStyle = color;
-            context.fillStyle = color;
+            context.lineWidth = width;
+            context.beginPath();
+            context.moveTo(x[0] - offset, y[0] - offset);
+            for (var i = 1; i < x.length; i += 1) {
+                context.lineTo(x[i] - offset, y[i] -offset);
+            }
+            context.stroke();
+        }
+
+        /**
+         * Canvas 線分を消す
+         */
+        function eraseLine (x, y, width, color, isMaskMode) {
+            'use strict';
+            // console.log('eraseLine');
+
+            var offset = drawWidth % 2 === 0 ? 0 : 0.5;
+            context.globalCompositeOperation = DESTINATION_OUT;
+            context.strokeStyle = ERASE_COLOR;
             context.lineWidth = width;
             context.beginPath();
             context.moveTo(x[0] - offset, y[0] - offset);
@@ -724,13 +826,28 @@
         /**
          * Canvas 点を描画する
          */
-        function drawPoint (x, y, width, color) {
+        function drawPoint (x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('drawPoint');
 
             // IEとChromeではlineToで点を描画できないようなので、多少ぼやけるがarcを使う。
-            context.strokeStyle = color;
+            context.globalCompositeOperation = isMaskMode ? DESTINATION_OVER : SOURCE_OVER;
             context.fillStyle = color;
+            context.beginPath();
+            context.arc(x, y, width / 2, 0, Math.PI * 2, false);
+            context.fill();
+        }
+
+        /**
+         * Canvas 点を消す
+         */
+        function erasePoint (x, y, width, color, isMaskMode) {
+            'use strict';
+            // console.log('erasePoint');
+
+            // IEとChromeではlineToで点を描画できないようなので、多少ぼやけるがarcを使う。
+            context.globalCompositeOperation = DESTINATION_OUT;
+            context.fillStyle = ERASE_COLOR;
             context.beginPath();
             context.arc(x, y, width / 2, 0, Math.PI * 2, false);
             context.fill();
@@ -743,18 +860,19 @@
             'use strict';
             // console.log('#clearCanvas');
 
-            context.fillStyle = '#ffffff';
-            context.fillRect(0, 0, $('#mainCanvas').width(), $('#mainCanvas').height());
+            context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
 
         /**
          * お絵かき情報をbufferに溜める
          */
-        function pushBuffer (type, width, color, data) {
+        function pushBuffer (type, width, color, data, isMaskMode) {
             'use strict';
             // console.log('pushBuffer');
 
+            var mode = type.indexOf('erase') === -1 ? 'draw' : 'erase';
             if (buffer.length > 0 &&
+                buffer.slice(-1)[0].mode === mode &&
                 buffer.slice(-1)[0].width === width &&
                 buffer.slice(-1)[0].color === color) {
                 if (type === 'line') {
@@ -767,14 +885,30 @@
             } else {
                 if (type === 'line') {
                     buffer.push({
+                        mode: 'draw',
                         width: width,
                         color: color,
                         x: [ [data.xs, data.xe] ],
-                        y: [ [data.ys, data.ye] ] });
+                        y: [ [data.ys, data.ye] ],
+                        mask: isMaskMode });
                 } else if (type === 'point') {
                     buffer.push({
+                        mode: 'draw',
                         width: width,
                         color: color,
+                        x: [ [data.x] ],
+                        y: [ [data.y] ],
+                        mask: isMaskMode });
+                } else if (type === 'eraseLine') {
+                    buffer.push({
+                        mode: 'erase',
+                        width: width,
+                        x: [ [data.xs, data.xe] ],
+                        y: [ [data.ys, data.ye] ] });
+                } else if (type === 'erasePoint') {
+                    buffer.push({
+                        mode: 'erase',
+                        width: width,
                         x: [ [data.x] ],
                         y: [ [data.y] ] });
                 }
@@ -801,13 +935,25 @@
         }
 
         /**
+         * 保存用に白背景と合成する
+         */
+        function combineCanvases () {
+            'use strict';
+            // console.log('combineCanvases');
+
+            combinationContext.fillStyle = '#ffffff';
+            combinationContext.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            combinationContext.drawImage(canvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+
+        /**
          * 画像DataUrl取得メソッド
          */
         function getPng () {
             'use strict';
             // console.log('getPng');
 
-            var dataUrl = canvas.toDataURL('image/png');
+            var dataUrl = combinationCanvas.toDataURL('image/png');
             return dataUrl.split(',')[1];
         }
 
@@ -821,18 +967,18 @@
             var thumbnailCanvas = document.createElement('canvas');
 
             var rate;
-            if (canvas.width >= canvas.height) {
-                rate = canvas.width / thumbnailSize;
+            if (CANVAS_WIDTH >= CANVAS_HEIGHT) {
+                rate = CANVAS_WIDTH / thumbnailSize;
                 thumbnailCanvas.width = thumbnailSize;
-                thumbnailCanvas.height = Math.floor(canvas.height / rate);
+                thumbnailCanvas.height = Math.floor(CANVAS_HEIGHT / rate);
             } else {
-                rate = canvas.height / thumbnailSize;
-                thumbnailCanvas.width = Math.floor(canvas.width / rate);
+                rate = CANVAS_HEIGHT / thumbnailSize;
+                thumbnailCanvas.width = Math.floor(CANVAS_WIDTH / rate);
                 thumbnailCanvas.height = thumbnailSize;
             }
 
             var thumbnailContext = thumbnailCanvas.getContext('2d');
-            thumbnailContext.drawImage(canvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
+            thumbnailContext.drawImage(combinationCanvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
 
             var dataUrl = thumbnailCanvas.toDataURL('image/png');
             return dataUrl.split(',')[1];
