@@ -1,7 +1,7 @@
 var fs = require('fs');
 var uuid = require('node-uuid');
 var log4js = require('log4js');
-var logger = log4js.getLogger('OekakiChat');
+var logger = log4js.getLogger('appLog');
 var server = require('../server.js');
 var db = require('./db.js');
 var Room = require('./Room.js').Room;
@@ -109,7 +109,7 @@ exports.onConnection = function (client) {
                 return callback({ result: RESULT_SYSTEM_ERROR });
             }
 
-            callback({
+            return callback({
                 result:   RESULT_OK,
                 roomId:   doc.roomId,
                 configId: doc.configId,
@@ -332,7 +332,7 @@ exports.onConnection = function (client) {
 //------------------------------
 
 /**
- * HTMLエスケープ処理 
+ * HTMLエスケープ処理
  */
 function escapeHTML (str) {
     'use strict';
