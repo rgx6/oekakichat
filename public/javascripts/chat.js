@@ -121,7 +121,7 @@
         new dragObject('circle', 'gradientBox', circleLowBounds, circleUpBounds, circleDown, circleMoved, endMovement);
 
         // serverに接続
-        socket = io.connect();
+        socket = io.connect('/', { 'reconnect': false });
 
         //------------------------------
         // メッセージハンドラ定義
@@ -152,6 +152,17 @@
                     alert('予期しないエラーです');
                 }
             });
+        });
+
+        /**
+         * 切断イベント
+         */
+        socket.on('disconnect', function () {
+            'use strict';
+            // console.log('disconnect');
+
+            isDisabled = true;
+            alert('サーバーとの接続が切断されました。\nページを更新してください。');
         });
 
         /**
