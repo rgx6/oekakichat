@@ -43,7 +43,7 @@ block body
             canvas#combinationCanvas.mainCanvas(width='#{width}px', height='#{height}px')
             canvas#mainCanvas.mainCanvas(width='#{width}px', height='#{height}px')
             canvas#cursorCanvas.mainCanvas(width='#{width}px', height='#{height}px')
-        div#cp.cp(style='display: none; position: fixed; background-color: #fff;')
+        div#cp.cp(style='display: none; position: fixed; background-color: #fff; z-index: 100;')
             div#gradientBox
                 img#gradientImg(src='/images/color_picker_gradient.png')
                 img#circle(src='/images/color_picker_circle.gif')
