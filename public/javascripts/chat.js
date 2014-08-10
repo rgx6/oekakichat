@@ -28,6 +28,10 @@
         var BRUSH_SIZE_CANVAS_HEIGHT = $('#brushSizeCanvas').height();
         var BRUSH_SIZE_CANVAS_WIDTH = $('#brushSizeCanvas').width();
 
+        var MODE_BRUSH = 'brush';
+        var MODE_ERASER = 'eraser';
+        var MODE_SPUIT = 'spuit';
+
         //------------------------------
         // 変数
         //------------------------------
@@ -82,6 +86,9 @@
         var userCount = 0;
         // 全体の接続数
         var roomsUserCount = 0;
+
+        // モード制御用
+        var currentMode = MODE_BRUSH;
 
         // マスクモード制御用
         var isMaskMode = false;
@@ -223,11 +230,13 @@
             drawFlag = true;
             startX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
             startY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
-            if ($('#spuit').hasClass('active')) {
-                $('#pallet>div.selectedColor').css('background-color', getColor(startX, startY));
+            if (isSpuitMode()) {
+                var spuitColor = getColor(startX, startY);
+                $('#pallet>div.selectedColor').css('background-color', spuitColor);
                 changePalletSelectedBorderColor();
+                color = spuitColor;
             } else {
-                if ($('#brush').hasClass('active')) {
+                if (isBrushMode()) {
                     drawPoint(startX, startY, drawWidth, color, isMaskMode);
                     pushBuffer('point', drawWidth, color, { x: startX, y: startY }, isMaskMode);
                 } else {
@@ -249,11 +258,13 @@
             if (drawFlag) {
                 var endX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
                 var endY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
-                if ($('#spuit').hasClass('active')) {
-                    $('#pallet>div.selectedColor').css('background-color', getColor(endX, endY));
+                if (isSpuitMode()) {
+                    var spuitColor = getColor(endX, endY);
+                    $('#pallet>div.selectedColor').css('background-color', spuitColor);
                     changePalletSelectedBorderColor();
+                    color = spuitColor;
                 } else {
-                    if ($('#brush').hasClass('active')) {
+                    if (isBrushMode()) {
                         drawLine([startX, endX], [startY, endY], drawWidth, color, isMaskMode);
                         pushBuffer('line', drawWidth, color, { xs: startX, ys: startY, xe: endX, ye: endY }, isMaskMode);
                     } else {
@@ -303,12 +314,11 @@
 
             cursorContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            if ($('#spuit').hasClass('active')) return;
+            if (isSpuitMode()) return;
 
-            var c = $('#brush').hasClass('active') ? color : '#ffffff';
+            var c = isBrushMode() ? color : '#ffffff';
             startX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
             startY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
-            cursorContext.strokeStyle = c;
             cursorContext.fillStyle = c;
             cursorContext.beginPath();
             cursorContext.arc(startX, startY, drawWidth / 2, 0, Math.PI * 2, false);
@@ -377,9 +387,9 @@
             slide: function (event, ui) {
                 drawWidth = ui.value;
                 drawBrushSize();
-                if ($('#brush').hasClass('active')) {
+                if (isBrushMode()) {
                     drawWidthBrush = drawWidth;
-                } else if ($('#eraser').hasClass('active')) {
+                } else if (isEraserMode()) {
                     drawWidthEraser = drawWidth;
                 }
             }
@@ -403,7 +413,7 @@
             // Interactive Color Picker 表示中に色を変更した場合に元の色を同期させる
             $('.staticColorFixed').css('background-color', $(this).css('background-color'));
 
-            if ($('#eraser').hasClass('active')) {
+            if (isEraserMode()) {
                 changeBrushMode();
             }
         });
@@ -623,16 +633,16 @@
 
             var delta = e.originalEvent.deltaY < 0 ? 1 : -1;
 
-            if (key_width_pressed && !$('#spuit').hasClass('active')) {
+            if (key_width_pressed && !isSpuitMode()) {
                 e.preventDefault();
                 var newWidth = Number(drawWidth) + delta;
                 newWidth = Math.max(newWidth, BRUSH_SIZE_MIN);
                 newWidth = Math.min(newWidth, BRUSH_SIZE_MAX);
                 drawWidth = newWidth;
                 drawBrushSize();
-                if ($('#brush').hasClass('active')) {
+                if (isBrushMode()) {
                     drawWidthBrush = drawWidth;
-                } else if ($('#eraser').hasClass('active')) {
+                } else if (isEraserMode()) {
                     drawWidthEraser = drawWidth;
                 }
                 $('#brushSizeSlider').slider('value', drawWidth);
@@ -686,11 +696,35 @@
         }
 
         /**
+         * モード判定
+         */
+        function isBrushMode () {
+            'use strict';
+            // console.log('isBrushMode');
+
+            return currentMode === MODE_BRUSH;
+        }
+        function isEraserMode () {
+            'use strict';
+            // console.log('isEraserMode');
+
+            return currentMode === MODE_ERASER;
+        }
+        function isSpuitMode () {
+            'use strict';
+            // console.log('isSpuitMode');
+
+            return currentMode === MODE_SPUIT;
+        }
+
+        /**
          * 描画モードをブラシに変更する
          */
         function changeBrushMode () {
             'use strict';
             // console.log('changeBrushMode');
+
+            currentMode = MODE_BRUSH;
 
             $('#eraser').removeClass('active');
             $('#spuit').removeClass('active');
@@ -710,6 +744,8 @@
             'use strict';
             // console.log('changeEraserMode');
 
+            currentMode = MODE_ERASER;
+
             $('#brush').removeClass('active');
             $('#spuit').removeClass('active');
             $('#eraser').addClass('active');
@@ -727,6 +763,8 @@
         function changeSpuitMode () {
             'use strict';
             // console.log('changeSpuitMode');
+
+            currentMode = MODE_SPUIT;
 
             $('#brush').removeClass('active');
             $('#eraser').removeClass('active');
@@ -757,15 +795,11 @@
             'use strict';
             // console.log('drawBrushSize');
 
-            brushContext.fillStyle = '#ffffff';
-            brushContext.beginPath();
-            brushContext.fillRect(0, 0, BRUSH_SIZE_CANVAS_WIDTH, BRUSH_SIZE_CANVAS_HEIGHT);
-            brushContext.stroke();
+            brushContext.clearRect(0, 0, BRUSH_SIZE_CANVAS_WIDTH, BRUSH_SIZE_CANVAS_HEIGHT);
 
             // IEとChromeではlineToで点を描画できないようなので、多少ぼやけるがarcを使う。
             var x = 13;
             var y = 13;
-            brushContext.strokeStyle = '#000000';
             brushContext.fillStyle = '#000000';
             brushContext.beginPath();
             brushContext.arc(x, y, drawWidth / 2, 0, Math.PI * 2, false);
