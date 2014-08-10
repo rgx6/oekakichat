@@ -402,6 +402,10 @@
 
             // Interactive Color Picker 表示中に色を変更した場合に元の色を同期させる
             $('.staticColorFixed').css('background-color', $(this).css('background-color'));
+
+            if ($('#eraser').hasClass('active')) {
+                changeBrushMode();
+            }
         });
 
         /**
@@ -784,7 +788,7 @@
                 var isMaskMode = data[i].mask;
 
                 var pointMethod = mode === 'draw' ? drawPoint : erasePoint;
-                var lineMethod = mode === 'draw' ? drawLine : eraseLine;
+                var lineMethod = mode === 'draw' ? drawLineDiff : eraseLineDiff;
 
                 for (var j = 0; j < x.length; j += 1) {
                     if (x[j].length === 1) {
@@ -803,7 +807,7 @@
             'use strict';
             // console.log('drawLine');
 
-            var offset = drawWidth % 2 === 0 ? 0 : 0.5;
+            var offset = width % 2 === 0 ? 0 : 0.5;
             context.globalCompositeOperation = isMaskMode ? DESTINATION_OVER : SOURCE_OVER;
             context.strokeStyle = color;
             context.lineWidth = width;
@@ -816,13 +820,36 @@
         }
 
         /**
+         * Canvas 線分を描画する（座標の差分）
+         */
+        function drawLineDiff (x, y, width, color, isMaskMode) {
+            'use strict';
+            // console.log('drawLineDiff');
+
+            var offset = width % 2 === 0 ? 0 : 0.5;
+            var tx = x[0] - offset;
+            var ty = y[0] - offset;
+            context.globalCompositeOperation = isMaskMode ? DESTINATION_OVER : SOURCE_OVER;
+            context.strokeStyle = color;
+            context.lineWidth = width;
+            context.beginPath();
+            context.moveTo(tx, ty);
+            for (var i = 1; i < x.length; i += 1) {
+                tx += x[i];
+                ty += y[i];
+                context.lineTo(tx, ty);
+            }
+            context.stroke();
+        }
+
+        /**
          * Canvas 線分を消す
          */
         function eraseLine (x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('eraseLine');
 
-            var offset = drawWidth % 2 === 0 ? 0 : 0.5;
+            var offset = width % 2 === 0 ? 0 : 0.5;
             context.globalCompositeOperation = DESTINATION_OUT;
             context.strokeStyle = ERASE_COLOR;
             context.lineWidth = width;
@@ -830,6 +857,29 @@
             context.moveTo(x[0] - offset, y[0] - offset);
             for (var i = 1; i < x.length; i += 1) {
                 context.lineTo(x[i] - offset, y[i] -offset);
+            }
+            context.stroke();
+        }
+
+        /**
+         * Canvas 線分を消す（座標の差分）
+         */
+        function eraseLineDiff (x, y, width, color, isMaskMode) {
+            'use strict';
+            // console.log('eraseLineDiff');
+
+            var offset = width % 2 === 0 ? 0 : 0.5;
+            var tx = x[0] - offset;
+            var ty = y[0] - offset;
+            context.globalCompositeOperation = DESTINATION_OUT;
+            context.strokeStyle = ERASE_COLOR;
+            context.lineWidth = width;
+            context.beginPath();
+            context.moveTo(tx, ty);
+            for (var i = 1; i < x.length; i += 1) {
+                tx += x[i];
+                ty += y[i];
+                context.lineTo(tx, ty);
             }
             context.stroke();
         }
@@ -887,8 +937,8 @@
                 buffer.slice(-1)[0].width === width &&
                 buffer.slice(-1)[0].color === color) {
                 if (type === 'line') {
-                    buffer.slice(-1)[0].x.slice(-1)[0].push(data.xe);
-                    buffer.slice(-1)[0].y.slice(-1)[0].push(data.ye);
+                    buffer.slice(-1)[0].x.slice(-1)[0].push(data.xe - data.xs);
+                    buffer.slice(-1)[0].y.slice(-1)[0].push(data.ye - data.ys);
                 } else if (type === 'point') {
                     buffer.slice(-1)[0].x.push( [data.x] );
                     buffer.slice(-1)[0].y.push( [data.y] );
@@ -899,8 +949,8 @@
                         mode: 'draw',
                         width: width,
                         color: color,
-                        x: [ [data.xs, data.xe] ],
-                        y: [ [data.ys, data.ye] ],
+                        x: [ [data.xs, data.xe - data.xs] ],
+                        y: [ [data.ys, data.ye - data.ys] ],
                         mask: isMaskMode });
                 } else if (type === 'point') {
                     buffer.push({
@@ -914,8 +964,8 @@
                     buffer.push({
                         mode: 'erase',
                         width: width,
-                        x: [ [data.xs, data.xe] ],
-                        y: [ [data.ys, data.ye] ] });
+                        x: [ [data.xs, data.xe - data.xs] ],
+                        y: [ [data.ys, data.ye - data.ys] ] });
                 } else if (type === 'erasePoint') {
                     buffer.push({
                         mode: 'erase',
