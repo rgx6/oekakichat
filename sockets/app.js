@@ -183,6 +183,10 @@ exports.onConnection = function (client) {
 
         if (isUndefinedOrNull(rooms[id])) return;
 
+        // hack : お絵かきデータのフォーマットの破壊的な変更を行ったため一時的にチェックを追加した
+        // 再接続無効の変更がクライアントに行き渡れば以降は不要に
+        if (isUndefinedOrNull(data[0].mode)) return;
+
         rooms[id].storeImage(data);
         client.broadcast.to(id).emit('push image', data);
     });
