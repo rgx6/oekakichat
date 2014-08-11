@@ -241,7 +241,7 @@
                     pushBuffer('point', drawWidth, color, { x: startX, y: startY }, isMaskMode);
                 } else {
                     erasePoint(startX, startY, drawWidth);
-                    pushBuffer('erasePoint', drawWidth, null, { x: startX, y: startY }, null);
+                    pushBuffer('erasepoint', drawWidth, null, { x: startX, y: startY }, null);
                 }
             }
         });
@@ -269,7 +269,7 @@
                         pushBuffer('line', drawWidth, color, { xs: startX, ys: startY, xe: endX, ye: endY }, isMaskMode);
                     } else {
                         eraseLine([startX, endX], [startY, endY], drawWidth);
-                        pushBuffer('eraseLine', drawWidth, null, { xs: startX, ys: startY, xe: endX, ye: endY }, null);
+                        pushBuffer('eraseline', drawWidth, null, { xs: startX, ys: startY, xe: endX, ye: endY }, null);
                     }
                 }
                 startX = endX;
@@ -969,11 +969,11 @@
             if (buffer.length > 0 &&
                 buffer.slice(-1)[0].mode === mode &&
                 buffer.slice(-1)[0].width === width &&
-                buffer.slice(-1)[0].color === color) {
-                if (type === 'line') {
+                (buffer.slice(-1)[0].color == null || buffer.slice(-1)[0].color === color)) {
+                if (type.indexOf('line') !== -1) {
                     buffer.slice(-1)[0].x.slice(-1)[0].push(data.xe - data.xs);
                     buffer.slice(-1)[0].y.slice(-1)[0].push(data.ye - data.ys);
-                } else if (type === 'point') {
+                } else if (type.indexOf('point') !== -1) {
                     buffer.slice(-1)[0].x.push( [data.x] );
                     buffer.slice(-1)[0].y.push( [data.y] );
                 }
@@ -994,13 +994,13 @@
                         x: [ [data.x] ],
                         y: [ [data.y] ],
                         mask: isMaskMode });
-                } else if (type === 'eraseLine') {
+                } else if (type === 'eraseline') {
                     buffer.push({
                         mode: 'erase',
                         width: width,
                         x: [ [data.xs, data.xe - data.xs] ],
                         y: [ [data.ys, data.ye - data.ys] ] });
-                } else if (type === 'erasePoint') {
+                } else if (type === 'erasepoint') {
                     buffer.push({
                         mode: 'erase',
                         width: width,
