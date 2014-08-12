@@ -141,6 +141,7 @@
             'use strict';
             // console.log('connected');
 
+            // todo : versionでも持たせて再読み込みが必要かどうかチェックさせる？
             socket.emit('enter room', getIdFromUrl(), function (res) {
                 'use strict';
                 // console.log('enter room callback');
@@ -151,9 +152,14 @@
                     alert('不正なパラメータです');
                 } else if (res.result === RESULT_OK) {
                     clearCanvas();
+                    startTimer();
                     res.imageLog.forEach(function (data) {
                         drawData(data);
                     });
+                    endTimer();
+                    var dataSize = (new Blob([JSON.stringify(res.imageLog)], { type: 'application/json' })).size;
+                    console.log('データサイズ : ' + dataSize);
+                    // todo : canvasの描画が終わる前にこの処理が実行されている？
                     isDisabled = false;
                 } else {
                     alert('予期しないエラーです');
@@ -1077,6 +1083,19 @@
 
             var dataUrl = thumbnailCanvas.toDataURL('image/png');
             return dataUrl.split(',')[1];
+        }
+
+        /**
+         * パフォーマンス計測用
+         */
+        var startTime;
+        function startTimer () {
+            'use strict';
+            startTime = new Date();
+        }
+        function endTimer () {
+            'use strict';
+            console.log('経過時間 : ' + (new Date() - startTime));
         }
     });
 })();
