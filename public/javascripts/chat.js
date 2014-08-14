@@ -59,11 +59,13 @@
         var drawFlag = false;
         // canvasオブジェクト
         var combinationCanvas = $('#combinationCanvas').get(0);
+        var roughCanvas = $('#roughCanvas').get(0);
         var mainCanvas = $('#mainCanvas').get(0);
         var cursorCanvas = $('#cursorCanvas').get(0);
         var brushCanvas = $('#brushSizeCanvas').get(0);
         // contextオブジェクト
         var combinationContext;
+        var roughContext;
         var mainContext;
         var cursorContext;
         var brushContext;
@@ -93,6 +95,9 @@
         // マスクモード制御用
         var isMaskMode = false;
 
+        // 下描きモード制御用
+        var isRoughMode = false;
+
         // ホイール操作用ショートカットキー
         var key_width_pressed = false;
 
@@ -106,6 +111,10 @@
         }
 
         combinationContext = combinationCanvas.getContext('2d');
+
+        roughContext = roughCanvas.getContext('2d');
+        roughContext.lineCap = 'round';
+        roughContext.lineJoin = 'round';
 
         mainContext = mainCanvas.getContext('2d');
         mainContext.lineCap = 'round';
@@ -151,7 +160,7 @@
                 if (res.result === RESULT_BAD_PARAM) {
                     alert('不正なパラメータです');
                 } else if (res.result === RESULT_OK) {
-                    // todo : 下描きレイヤーのclearについては要検討
+                    // todo : 再接続時の下描きレイヤーのclearについては要検討
                     clearCanvas(mainContext);
                     startTimer();
                     res.imageLog.forEach(function (data) {
@@ -384,6 +393,16 @@
         });
 
         /**
+         * 下描きボタンをクリック
+         */
+        $('#rough').on('click', function () {
+            'use strict';
+            // console.log('#rough click');
+
+            toggleRoughMode();
+        });
+
+        /**
          * 太さ変更
          */
         $("#brushSizeSlider").slider({
@@ -533,6 +552,13 @@
             e.stopPropagation();
             if (isDisabled) return;
 
+            if (isRoughMode) {
+                if (window.confirm('下描きをクリアしますか？')) {
+                    clearCanvas(roughContext);
+                }
+                return;
+            }
+
             if (saveClearEnabled) {
                 if (window.confirm(
                     '絵を保存してキャンバスをクリアしますか？\n' +
@@ -608,6 +634,13 @@
             // console.log('window ' + e.type + ' ' + e.keyCode);
 
             switch(e.keyCode) {
+                case 84: // T
+                    if (e.type === 'keydown') {
+                        $('#roughCanvas').css('display', 'none');
+                    } else {
+                        $('#roughCanvas').css('display', '');
+                    }
+                    break;
                 case 87: // W
                     key_width_pressed = e.type === 'keydown';
                     break;
@@ -617,7 +650,21 @@
             'use strict';
             // console.log('window keyup ' + e.keyCode);
 
-            if (e.keyCode === 66) {
+            if (49 <= e.keyCode && e.keyCode <= 56) {
+                // 1-8 色選択
+                var colorId = '#color' + (e.keyCode - 48);
+
+                // hack : パレットのクリックイベントと共通化
+                $('#pallet>div.selectedColor').removeClass('selectedColor');
+                $(colorId).addClass('selectedColor');
+
+                $('#pallet>div').css('border-color', $('#toolbar').css('background-color'));
+                changePalletSelectedBorderColor();
+                color = $(colorId).css('background-color');
+
+                // Interactive Color Picker 表示中に色を変更した場合に元の色を同期させる
+                $('.staticColorFixed').css('background-color', $(colorId).css('background-color'));
+            } else if (e.keyCode === 66) {
                 // B
                 changeBrushMode();
             } else if (e.keyCode === 69) {
@@ -631,7 +678,7 @@
                 toggleMaskMode();
             } else if (e.keyCode === 82) {
                 // R
-                // 下書き 予定
+                toggleRoughMode();
             }
         });
         $(window).on('wheel', function (e) {
@@ -678,7 +725,7 @@
             'use strict';
             // console.log('getCurrentContext');
 
-            return mainContext;
+            return isRoughMode ? roughContext : mainContext;
         }
 
         /**
@@ -791,7 +838,7 @@
         }
 
         /**
-         * マスクの切替
+         * マスクモードの切替
          */
         function toggleMaskMode () {
             'use strict';
@@ -802,6 +849,21 @@
                 $('#mask').addClass('active');
             } else {
                 $('#mask').removeClass('active');
+            }
+        }
+
+        /**
+         * 下描きモードの切替
+         */
+        function toggleRoughMode () {
+            'use strict';
+            // console.log('toggleRoughMode');
+
+            isRoughMode = !isRoughMode;
+            if (isRoughMode) {
+                $('#rough').addClass('active');
+            } else {
+                $('#rough').removeClass('active');
             }
         }
 
@@ -981,6 +1043,9 @@
         function pushBuffer (type, width, color, data, isMaskMode) {
             'use strict';
             // console.log('pushBuffer');
+
+            // hack : 下描きモードの場合は無視。呼び出し元で制御するように修正する。
+            if (isRoughMode) return;
 
             var mode = type.indexOf('erase') === -1 ? 'draw' : 'erase';
             if (buffer.length > 0 &&

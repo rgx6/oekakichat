@@ -18,6 +18,7 @@ block body
                 label#eraser 消
                 label#spuit 吸
                 label#mask マ
+                label#rough 下
             div#pallet.pallet
                 #color1.selectedColor
                 #color2
@@ -41,6 +42,7 @@ block body
             div.clear
         div.canvas
             canvas#combinationCanvas.mainCanvas(width='#{width}px', height='#{height}px')
+            canvas#roughCanvas.mainCanvas(width='#{width}px', height='#{height}px')
             canvas#mainCanvas.mainCanvas(width='#{width}px', height='#{height}px')
             canvas#cursorCanvas.mainCanvas(width='#{width}px', height='#{height}px')
         div#cp.cp(style='display: none; position: fixed; background-color: #fff; z-index: 100;')

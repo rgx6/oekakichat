@@ -179,6 +179,10 @@ table input, table td {
   display: none;
 }
 
+#roughCanvas {
+  z-index: 20;
+}
+
 #mainCanvas {
   z-index: 30;
 }
