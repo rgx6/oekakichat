@@ -59,12 +59,12 @@
         var drawFlag = false;
         // canvasオブジェクト
         var combinationCanvas = $('#combinationCanvas').get(0);
-        var canvas = $('#mainCanvas').get(0);
+        var mainCanvas = $('#mainCanvas').get(0);
         var cursorCanvas = $('#cursorCanvas').get(0);
         var brushCanvas = $('#brushSizeCanvas').get(0);
         // contextオブジェクト
         var combinationContext;
-        var context;
+        var mainContext;
         var cursorContext;
         var brushContext;
         // お絵かきデータのbuffer
@@ -100,16 +100,16 @@
         // 準備
         //------------------------------
 
-        if (!canvas.getContext) {
+        if (!mainCanvas.getContext) {
             alert('ブラウザがCanvasに対応してないよ(´・ω・｀)');
             return;
         }
 
         combinationContext = combinationCanvas.getContext('2d');
 
-        context = canvas.getContext('2d');
-        context.lineCap = 'round';
-        context.lineJoin = 'round';
+        mainContext = mainCanvas.getContext('2d');
+        mainContext.lineCap = 'round';
+        mainContext.lineJoin = 'round';
 
         cursorContext = cursorCanvas.getContext('2d');
 
@@ -151,7 +151,8 @@
                 if (res.result === RESULT_BAD_PARAM) {
                     alert('不正なパラメータです');
                 } else if (res.result === RESULT_OK) {
-                    clearCanvas();
+                    // todo : 下描きレイヤーのclearについては要検討
+                    clearCanvas(mainContext);
                     startTimer();
                     res.imageLog.forEach(function (data) {
                         drawData(data);
@@ -217,7 +218,7 @@
             'use strict';
             // console.log('push clear canvas');
 
-            clearCanvas();
+            clearCanvas(mainContext);
         });
 
         //------------------------------
@@ -237,16 +238,16 @@
             startX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
             startY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
             if (isSpuitMode()) {
-                var spuitColor = getColor(startX, startY);
+                var spuitColor = getColor(getCurrentContext(), startX, startY);
                 $('#pallet>div.selectedColor').css('background-color', spuitColor);
                 changePalletSelectedBorderColor();
                 color = spuitColor;
             } else {
                 if (isBrushMode()) {
-                    drawPoint(startX, startY, drawWidth, color, isMaskMode);
+                    drawPoint(getCurrentContext(), startX, startY, drawWidth, color, isMaskMode);
                     pushBuffer('point', drawWidth, color, { x: startX, y: startY }, isMaskMode);
                 } else {
-                    erasePoint(startX, startY, drawWidth);
+                    erasePoint(getCurrentContext(), startX, startY, drawWidth);
                     pushBuffer('erasepoint', drawWidth, null, { x: startX, y: startY }, null);
                 }
             }
@@ -265,16 +266,16 @@
                 var endX = Math.round(e.pageX) - CANVAS_OFFSET_LEFT;
                 var endY = Math.round(e.pageY) - CANVAS_OFFSET_TOP;
                 if (isSpuitMode()) {
-                    var spuitColor = getColor(endX, endY);
+                    var spuitColor = getColor(getCurrentContext(), endX, endY);
                     $('#pallet>div.selectedColor').css('background-color', spuitColor);
                     changePalletSelectedBorderColor();
                     color = spuitColor;
                 } else {
                     if (isBrushMode()) {
-                        drawLine([startX, endX], [startY, endY], drawWidth, color, isMaskMode);
+                        drawLine(getCurrentContext(), [startX, endX], [startY, endY], drawWidth, color, isMaskMode);
                         pushBuffer('line', drawWidth, color, { xs: startX, ys: startY, xe: endX, ye: endY }, isMaskMode);
                     } else {
-                        eraseLine([startX, endX], [startY, endY], drawWidth);
+                        eraseLine(getCurrentContext(), [startX, endX], [startY, endY], drawWidth);
                         pushBuffer('eraseline', drawWidth, null, { xs: startX, ys: startY, xe: endX, ye: endY }, null);
                     }
                 }
@@ -671,6 +672,16 @@
         }
 
         /**
+         * 現在の処理対象のcontextを取得する
+         */
+        function getCurrentContext () {
+            'use strict';
+            // console.log('getCurrentContext');
+
+            return mainContext;
+        }
+
+        /**
          * パレットの選択色の枠の色を設定する
          */
         function changePalletSelectedBorderColor () {
@@ -690,7 +701,7 @@
         /**
          * 指定座標の色を取得する
          */
-        function getColor(x, y) {
+        function getColor(context, x, y) {
             'use strict';
             // console.log('getColor');
 
@@ -832,9 +843,9 @@
 
                 for (var j = 0; j < x.length; j += 1) {
                     if (x[j].length === 1) {
-                        pointMethod(x[j][0], y[j][0], width, color, isMaskMode);
+                        pointMethod(mainContext, x[j][0], y[j][0], width, color, isMaskMode);
                     } else {
-                        lineMethod(x[j], y[j], width, color, isMaskMode);
+                        lineMethod(mainContext, x[j], y[j], width, color, isMaskMode);
                     }
                 }
             }
@@ -843,7 +854,7 @@
         /**
          * Canvas 線分を描画する
          */
-        function drawLine (x, y, width, color, isMaskMode) {
+        function drawLine (context, x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('drawLine');
 
@@ -862,7 +873,7 @@
         /**
          * Canvas 線分を描画する（座標の差分）
          */
-        function drawLineDiff (x, y, width, color, isMaskMode) {
+        function drawLineDiff (context, x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('drawLineDiff');
 
@@ -885,7 +896,7 @@
         /**
          * Canvas 線分を消す
          */
-        function eraseLine (x, y, width, color, isMaskMode) {
+        function eraseLine (context, x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('eraseLine');
 
@@ -904,7 +915,7 @@
         /**
          * Canvas 線分を消す（座標の差分）
          */
-        function eraseLineDiff (x, y, width, color, isMaskMode) {
+        function eraseLineDiff (context, x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('eraseLineDiff');
 
@@ -927,7 +938,7 @@
         /**
          * Canvas 点を描画する
          */
-        function drawPoint (x, y, width, color, isMaskMode) {
+        function drawPoint (context, x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('drawPoint');
 
@@ -942,7 +953,7 @@
         /**
          * Canvas 点を消す
          */
-        function erasePoint (x, y, width, color, isMaskMode) {
+        function erasePoint (context, x, y, width, color, isMaskMode) {
             'use strict';
             // console.log('erasePoint');
 
@@ -957,7 +968,7 @@
         /**
          * Canvas クリア
          */
-        function clearCanvas () {
+        function clearCanvas (context) {
             'use strict';
             // console.log('#clearCanvas');
 
@@ -1044,7 +1055,7 @@
 
             combinationContext.fillStyle = '#ffffff';
             combinationContext.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-            combinationContext.drawImage(canvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            combinationContext.drawImage(mainCanvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
 
         /**
