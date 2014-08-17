@@ -13,7 +13,7 @@
 .toolbar {
   background-color: #bdc3c7;
   position: fixed;
-  z-index: 1;
+  z-index: 50;
 }
 
 .toolbar div {
@@ -89,6 +89,10 @@
   width: 72px;
   top: 0px;
   left: 73px;
+}
+
+.cp {
+  z-index: 100;
 }
 
 /**
@@ -175,20 +179,7 @@ table input, table td {
 }
 
 #combinationCanvas {
-  z-index: 0;
   display: none;
-}
-
-#roughCanvas {
-  z-index: 20;
-}
-
-#mainCanvas {
-  z-index: 30;
-}
-
-#cursorCanvas {
-  z-index: 40;
 }
 
 /**
