@@ -328,6 +328,8 @@
             // console.log('mouse move');
             e.stopPropagation();
 
+            if (isRoughMode) updateRoughIndicator();
+
             cursorContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
             if (isSpuitMode()) return;
@@ -862,8 +864,31 @@
             isRoughMode = !isRoughMode;
             if (isRoughMode) {
                 $('#rough').addClass('active');
+                updateRoughIndicator();
+                $('#roughIndicator').css('display', 'block');
             } else {
                 $('#rough').removeClass('active');
+                $('#roughIndicator').css('display', 'none');
+            }
+        }
+
+        /**
+         * 下描きモードの表示を移動する
+         */
+        function updateRoughIndicator () {
+            'use strict';
+            // console.log('updateRoughIndicator');
+
+            var scrLeft = $(window).scrollLeft();
+            var winWidth = $(window).width();
+            var areaWidth = $('#mainCanvas').width() + 2;
+
+            var label = $('#roughIndicator');
+            if (scrLeft + winWidth / 2 < startX) {
+                label.css('left', '15px').css('display', 'block');
+            } else {
+                var left = (areaWidth < scrLeft + winWidth ? areaWidth : winWidth) - label.width() - 15;
+                label.css('left', left + 'px').css('display', 'block');
             }
         }
 

@@ -153,6 +153,22 @@
 }
 
 /**
+* 下描きモードの表示
+*/
+#roughIndicator {
+  position: fixed;
+  display: none;
+  top: 45px;
+  width: 90px;
+  height: 30px;
+  background-color: #ff0000;
+  color: #ffffff;
+  font-size: 20px;
+  text-align: center;
+  line-height: 30px;
+}
+
+/**
 * その他
 */
 body {
