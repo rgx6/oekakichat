@@ -882,13 +882,22 @@
             var scrLeft = $(window).scrollLeft();
             var winWidth = $(window).width();
             var areaWidth = $('#mainCanvas').width() + 2;
-
             var label = $('#roughIndicator');
-            if (scrLeft + winWidth / 2 < startX) {
-                label.css('left', '15px').css('display', 'block');
+            var left;
+            if (areaWidth < winWidth) {
+                if (areaWidth / 2 < startX) {
+                    label.css('left', '15px').css('display', 'block');
+                } else {
+                    left = (areaWidth - label.width() - 15) + 'px';
+                    label.css('left', left).css('display', 'block');
+                }
             } else {
-                var left = (areaWidth < scrLeft + winWidth ? areaWidth : winWidth) - label.width() - 15;
-                label.css('left', left + 'px').css('display', 'block');
+                if (scrLeft + winWidth / 2 < startX) {
+                    label.css('left', '15px').css('display', 'block');
+                } else {
+                    left = (winWidth - label.width() - 15) + 'px';
+                    label.css('left', left).css('display', 'block');
+                }
             }
         }
 
