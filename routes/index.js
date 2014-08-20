@@ -17,6 +17,8 @@ var WIDTH_MAX         = chatapp.WIDTH_MAX;
 var HEIGHT_MIN        = chatapp.HEIGHT_MIN;
 var HEIGHT_MAX        = chatapp.HEIGHT_MAX;
 
+var MESSAGE_LENGTH_MAX = chatapp.MESSAGE_LENGTH_MAX;
+
 var ITEMS_PER_LOG_PAGE = 20;
 
 // エラーメッセージ
@@ -86,10 +88,11 @@ exports.room = function (req, res) {
         }
 
         res.render('room', {
-            title:  doc.name + ' - ' + APP_TITLE,
-            id:     id,
-            width:  doc.width,
-            height: doc.height,
+            title:            doc.name + ' - ' + APP_TITLE,
+            id:               id,
+            width:            doc.width,
+            height:           doc.height,
+            messageLengthMax: MESSAGE_LENGTH_MAX,
         });
     });
 };

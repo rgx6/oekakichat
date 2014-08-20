@@ -16,6 +16,7 @@
         registeredTime:  { type: Date, require: true },
         updatedTime:     { type: Date, require: true },
     });
+    RoomSchema.set('autoIndex', false);
     mongoose.model('Room', RoomSchema);
 
     var LogSchema = new Schema({
@@ -25,10 +26,22 @@
         registeredTime: { type: Date, require: true },
         updatedTime:    { type: Date, require: true },
     });
+    LogSchema.set('autoIndex', false);
     mongoose.model('Log', LogSchema);
+
+    var ChatSchema = new Schema({
+        roomId:         { type: String, require: true, index: true },
+        message:        { type: String, require: true},
+        registeredTime: { type: Date, require: true, index: true },
+        isDeleted:      { type: Boolean, require: true },
+    });
+    ChatSchema.index({ roomId: 1, registeredTime: 1 });
+    ChatSchema.set('autoIndex', false);
+    mongoose.model('Chat', ChatSchema);
 
     mongoose.connect('mongodb://localhost/OekakiChat');
 
     exports.Room = mongoose.model('Room');
     exports.Log = mongoose.model('Log');
+    exports.Chat = mongoose.model('Chat');
 })();

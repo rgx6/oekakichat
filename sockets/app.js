@@ -2,6 +2,7 @@ var fs = require('fs');
 var uuid = require('node-uuid');
 var log4js = require('log4js');
 var logger = log4js.getLogger('appLog');
+var Promise  = require('es6-promise').Promise;
 var server = require('../server.js');
 var db = require('./db.js');
 var Room = require('./Room.js').Room;
@@ -22,6 +23,8 @@ var WIDTH_MIN         = exports.WIDTH_MIN         = 600;
 var WIDTH_MAX         = exports.WIDTH_MAX         = 2000;
 var HEIGHT_MIN        = exports.HEIGHT_MIN        = 300;
 var HEIGHT_MAX        = exports.HEIGHT_MAX        = 2000;
+
+var MESSAGE_LENGTH_MAX = exports.MESSAGE_LENGTH_MAX = 100;
 
 var LOGGER_INTERVAL_SECOND = 20;
 
@@ -78,7 +81,8 @@ exports.onConnection = function (client) {
             isUndefinedOrNull(data.height)    || isNaN(data.height) ||
             isUndefinedOrNull(data.isLogOpen) || typeof data.isLogOpen !== TYPE_BOOLEAN) {
             logger.warn('create room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
-            return callback({ result: RESULT_BAD_PARAM });
+            callback({ result: RESULT_BAD_PARAM });
+            return;
         }
 
         var name = data.name.trim();
@@ -86,7 +90,8 @@ exports.onConnection = function (client) {
             !checkParamSize(data.width, WIDTH_MIN, WIDTH_MAX) ||
             !checkParamSize(data.height, HEIGHT_MIN, HEIGHT_MAX)) {
             logger.warn('create room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
-            return callback({ result: RESULT_BAD_PARAM });
+            callback({ result: RESULT_BAD_PARAM });
+            return;
         }
 
         var roomId   = uuid.v4().replace(/-/g, '');
@@ -106,10 +111,11 @@ exports.onConnection = function (client) {
         room.save(function (err, doc) {
             if (err) {
                 logger.error(err);
-                return callback({ result: RESULT_SYSTEM_ERROR });
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
             }
 
-            return callback({
+            callback({
                 result:   RESULT_OK,
                 roomId:   doc.roomId,
                 configId: doc.configId,
@@ -128,24 +134,28 @@ exports.onConnection = function (client) {
 
         if (isUndefinedOrNull(id)) {
             logger.warn('enter room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
-            return callback({ result: RESULT_BAD_PARAM });
+            callback({ result: RESULT_BAD_PARAM });
+            return;
         }
 
         var query = db.Room.where({ roomId: id });
         query.findOne(function (err, doc) {
             if (err) {
                 logger.error(err);
-                return callback({ result: RESULT_SYSTEM_ERROR });
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
             }
 
             if (isUndefinedOrNull(doc)) {
                 logger.warn('enter room : ' + client.id + ' : ' + RESULT_ROOM_NOT_EXISTS);
-                return callback({ result: RESULT_ROOM_NOT_EXISTS });
+                callback({ result: RESULT_ROOM_NOT_EXISTS });
+                return;
             }
 
             if (!doc.isChatAvailable) {
                 logger.warn('enter room : ' + client.id + ' : ' + RESULT_ROOM_NOT_AVAILABLE);
-                return callback({ result: RESULT_ROOM_NOT_AVAILABLE });
+                callback({ result: RESULT_ROOM_NOT_AVAILABLE });
+                return;
             }
 
             if (isUndefinedOrNull(rooms[id])) {
@@ -161,9 +171,27 @@ exports.onConnection = function (client) {
             roomsUserCount += 1;
             updateUserCount(id);
 
-            callback({
-                result:   RESULT_OK,
-                imageLog: room.imageLog,
+            // チャットログ
+            var messages = [];
+            var query = db.Chat.find({ roomId: id, isDeleted: false })
+                    .select({ message: 1, registeredTime: 1 })
+                    .limit(50)
+                    .sort({ registeredTime: 'desc' });
+            query.exec(function (err, docs) {
+                if (err) {
+                    logger.error(err);
+                    callback({ result: RESULT_SYSTEM_ERROR });
+                    return;
+                }
+                docs.forEach(function (doc) {
+                    messages.push({ message: doc.message, time: doc.registeredTime });
+                });
+
+                callback({
+                    result:   RESULT_OK,
+                    imageLog: room.imageLog,
+                    messages: messages,
+                });
             });
         });
     });
@@ -192,6 +220,49 @@ exports.onConnection = function (client) {
     });
 
     /**
+     * チャットデータ受付
+     */
+    client.on('send message', function (data, callback) {
+        'use strict';
+        logger.trace('send message : ' + client.id);
+
+        var id;
+        client.get(KEY_ID, function (err, _id) {
+            if (err || !_id) { return; }
+            id = _id;
+        });
+
+        if (isUndefinedOrNull(rooms[id])) return;
+
+        if (isUndefinedOrNull(data) ||
+            !checkParamLength(data.trim(), 1, MESSAGE_LENGTH_MAX)) {
+            logger.warn('send message : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            callback({ result: RESULT_BAD_PARAM });
+            return;
+        }
+
+        var message = data.trim();
+
+        var now = new Date();
+        var chat = new db.Chat();
+        chat.roomId         = id;
+        chat.message        = message;
+        chat.registeredTime = now;
+        chat.isDeleted      = false;
+        chat.save(function (err, doc) {
+            if (err) {
+                logger.error(err);
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
+            }
+
+            callback({ result: RESULT_OK });
+            server.sockets.to(id).emit('push message', { message: message, time: now });
+            return;
+        });
+    });
+
+    /**
      * Canvasを保存してクリア
      */
     client.on('clear canvas', function (data, callback) {
@@ -201,13 +272,15 @@ exports.onConnection = function (client) {
         var id;
         client.get(KEY_ID, function (err, _id) {
             if (err || !_id) {
-                return callback({ result: RESULT_SYSTEM_ERROR });
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
             }
             id = _id;
         });
 
         if (isUndefinedOrNull(rooms[id])) {
-            return callback({ result: RESULT_SYSTEM_ERROR });
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
         }
 
         saveImage(id, data, true, callback);
@@ -223,13 +296,15 @@ exports.onConnection = function (client) {
         var id;
         client.get(KEY_ID, function (err, _id) {
             if (err || !_id) {
-                return callback({ result: RESULT_SYSTEM_ERROR });
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
             }
             id = _id;
         });
 
         if (isUndefinedOrNull(rooms[id])) {
-            return callback({ result: RESULT_SYSTEM_ERROR });
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
         }
 
         saveImage(id, data, false, callback);
@@ -281,7 +356,8 @@ exports.onConnection = function (client) {
         if (isUndefinedOrNull(data) ||
             isUndefinedOrNull(data.png) ||
             isUndefinedOrNull(data.thumbnailPng)) {
-            return callback({ result: RESULT_BAD_PARAM });
+            callback({ result: RESULT_BAD_PARAM });
+            return;
         }
 
         // todo : PNGフォーマットチェック
@@ -294,7 +370,8 @@ exports.onConnection = function (client) {
         fs.writeFile(path, buf, function (err) {
             if (err) {
                 logger.error(err);
-                return callback({ result: RESULT_SYSTEM_ERROR });
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
             }
 
             // サムネイル画像を保存
@@ -303,7 +380,8 @@ exports.onConnection = function (client) {
             fs.writeFile(path, buf, function (err) {
                 if (err) {
                     logger.error(err);
-                    return callback({ result: RESULT_SYSTEM_ERROR });
+                    callback({ result: RESULT_SYSTEM_ERROR });
+                    return;
                 }
 
                 var log = new db.Log();
@@ -315,15 +393,18 @@ exports.onConnection = function (client) {
                 log.save(function (err, doc) {
                     if (err) {
                         logger.error(err);
-                        return callback({ result: RESULT_SYSTEM_ERROR });
+                        callback({ result: RESULT_SYSTEM_ERROR });
+                        return;
                     }
 
                     if (clearFlag) {
                         rooms[id].deleteImage();
                         server.sockets.to(id).emit('push clear canvas');
-                        return callback({ result: RESULT_OK });
+                        callback({ result: RESULT_OK });
+                        return;
                     } else {
-                        return callback({ result: RESULT_OK });
+                        callback({ result: RESULT_OK });
+                        return;
                     }
                 });
             });
@@ -340,6 +421,7 @@ exports.onConnection = function (client) {
  */
 function escapeHTML (str) {
     'use strict';
+    logger.debug('escapeHTML');
 
     // hack : 抜けている文字がないかチェック
     return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -348,8 +430,9 @@ function escapeHTML (str) {
 /**
  * nullとundefinedのチェック
  */
-function isUndefinedOrNull(data) {
+function isUndefinedOrNull (data) {
     'use strict';
+    logger.debug('isUndefinedOrNull');
 
     return typeof data === TYPE_UNDEFINED || data === null;
 }
@@ -357,8 +440,9 @@ function isUndefinedOrNull(data) {
 /**
  * 文字数のチェック
  */
-function checkParamLength(data, minLength, maxLength) {
+function checkParamLength (data, minLength, maxLength) {
     'use strict';
+    logger.debug('checkParamLength');
 
     return minLength <= data.length && data.length <= maxLength;
 }
@@ -366,8 +450,9 @@ function checkParamLength(data, minLength, maxLength) {
 /**
  * 範囲のチェック
  */
-function checkParamSize(data, minSize, maxSize) {
+function checkParamSize (data, minSize, maxSize) {
     'use strict';
+    logger.debug('checkParamSize');
 
     return minSize <= data && data <= maxSize;
 }

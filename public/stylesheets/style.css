@@ -23,11 +23,7 @@
 /**
 * 絵を書く道具
 */
-.drawTool label {
-  /* 文字とボタンの大きさ、フォント、見直し */
-  /* display: block 必要かどうかよく分からない */
-  /* カーソル置いた時の文字色かなにか変更したい */
-  /* ボタンの間のスペースを調整 全体とのバランスも */
+label.toggle {
   display: block;
   float: left;
   cursor: pointer;
@@ -44,14 +40,19 @@
   line-height: 23px;
 }
 
-.drawTool label:hover {
+label.toggle:hover {
   border-color: #3498db;
   color: #3498db;
 }
 
-.drawTool .active {
+label.toggle.active {
   background-color: #2980b9;
   color: #ffffff;
+}
+
+label.toggle.new {
+  border-color: #20ddff;
+  background-color: #20ddff;
 }
 
 /**
@@ -116,7 +117,7 @@
 /**
 * 機能
 */
-.function label {
+label.function {
   display: block;
   float: left;
   cursor: pointer;
@@ -131,7 +132,7 @@
   line-height: 23px;
 }
 
-.function label:hover {
+label.function:hover {
   border-color: #3498db;
   background-color: #3498db;
 }
@@ -180,6 +181,10 @@ body {
   clear: both;
 }
 
+.displayNone {
+  display: none;
+}
+
 /**
 * canvas
 */
@@ -196,6 +201,77 @@ table input, table td {
 
 #combinationCanvas {
   display: none;
+}
+
+/**
+* チャット
+*/
+.chat {
+  position: fixed;
+  top: 80px;
+  left: 290px;
+  width: 300px;
+  height: 240px;
+  border: solid;
+  border-width: 1px;
+  background-color: #eee;
+  opacity: 0.95;
+}
+
+.chatLog {
+  height: 219px;
+  overflow-y: scroll;
+  word-wrap: break-word;
+  font-size: 15px;
+}
+
+.chatLog p {
+  margin: 0 5px 0 5px;
+}
+
+.chatLog hr {
+  margin: 2px 2%;
+  height: 1px;
+  background-color: #ddd;
+  border: none;
+}
+
+.message {
+  height: 20px;
+  border: solid;
+  border-width: 1px 0px 0px 0px;
+}
+
+.message input {
+  float: left;
+  width: 240px;
+  height: 20px;
+  border: 0;
+  padding: 0;
+}
+
+.message label {
+  display: block;
+  float: left;
+  cursor: pointer;
+  width: 39px;
+  height: 20px;
+  border: solid;
+  border-width: 0px 1px;
+  border-color: #000;
+  background-color: #2980b9;
+  color: #fff;
+  font-size: 15px;
+  text-align: center;
+  line-height: 20px;
+}
+
+.message label:hover {
+  background-color: #3498db;
+}
+
+.message label.disabled {
+  background-color: #eee;
 }
 
 /**

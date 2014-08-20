@@ -1,24 +1,24 @@
 extends layout
 block head
-    link(type="text/css", rel="stylesheet", href="/stylesheets/flick/jquery-ui-1.10.4.custom.min.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/flick/jquery-ui.min.css")
     link(type="text/css", rel="stylesheet", href="/stylesheets/colorpicker.css")
     link(type="text/css", rel="stylesheet", href="/stylesheets/colorbox.css")
     link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
     script(type="application/javascript", src="/socket.io/socket.io.js")
     script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
-    script(type="application/javascript", src="/javascripts/jquery-ui-1.10.4.custom.min.js")
+    script(type="application/javascript", src="/javascripts/jquery-ui.min.js")
     script(type="application/javascript", src="/javascripts/jquery.colorbox-min.js")
     script(type="application/javascript", src="/javascripts/chat.js")
     script(type="application/javascript", src="/javascripts/ColorPicker.js")
 block body
-    div.outline(style='width: #{width}px; height: #{height+28}px;')
-        div#toolbar.toolbar(style='width: #{width}px; height: 28px;')
+    div.outline(style="width: #{width}px; height: #{height+28}px;")
+        div#toolbar.toolbar(style="width: #{width}px; height: 28px;")
             div.drawTool
-                label#brush.active 筆
-                label#eraser 消
-                label#spuit 吸
-                label#mask マ
-                label#rough 下
+                label#brush.toggle.active 筆
+                label#eraser.toggle 消
+                label#spuit.toggle 吸
+                label#mask.toggle マ
+                label#rough.toggle 下
             div#pallet.pallet
                 #color1.selectedColor
                 #color2
@@ -30,65 +30,72 @@ block body
                 #color8
             div.brushSize
                 div#brushSizeSlider.brushSizeRange
-                canvas#brushSizeCanvas.brushSizeCanvas(width='25px', height='25px')
-            div.function
-                label#save 保
-                label#clear 無
-                label#log log
-                label#help ？
+                canvas#brushSizeCanvas.brushSizeCanvas(width="25px", height="25px")
+            div
+                label#saveButton.function 保
+                label#clearButton.function 無
+                label#logButton.function log
+                label#chatButton.toggle 話
+                label#helpButton.function ？
             div.info
                 label#userCount.userCount
                 label#globalUserCount.userCount
             div.clear
-        div.canvas
-            canvas#combinationCanvas.mainCanvas(width='#{width}px', height='#{height}px')
-            canvas#roughCanvas.mainCanvas(width='#{width}px', height='#{height}px')
-            canvas#mainCanvas.mainCanvas(width='#{width}px', height='#{height}px')
-            canvas#cursorCanvas.mainCanvas(width='#{width}px', height='#{height}px')
+        div.canvas#canvasArea
+            canvas#combinationCanvas.mainCanvas(width="#{width}px", height="#{height}px")
+            canvas#roughCanvas.mainCanvas(width="#{width}px", height="#{height}px")
+            canvas#mainCanvas.mainCanvas(width="#{width}px", height="#{height}px")
+            canvas#cursorCanvas.mainCanvas(width="#{width}px", height="#{height}px")
+        div.chat.displayNone#chatWindow
+            div.chatLog#chatLog
+            div.message
+                input#message(type="text", maxlength="#{messageLengthMax}")
+                label#messageButton 送信
+            div.clear
         div
             label#roughIndicator 下描き
-        div#cp.cp(style='display: none; position: fixed; background-color: #fff;')
+        div#cp.cp(style="display: none; position: fixed; background-color: #fff;")
             div#gradientBox
-                img#gradientImg(src='/images/color_picker_gradient.png')
-                img#circle(src='/images/color_picker_circle.gif')
+                img#gradientImg(src="/images/color_picker_gradient.png")
+                img#circle(src="/images/color_picker_circle.gif")
             div#hueBarDiv
-                img(style='position: absolute; height: 256px; width: 19px; left: 8px;', src='/images/color_picker_bar.png')
-                img#arrows(style='position: absolute; height: 9px; width: 35px; left: 0px;', src='/images/color_picker_arrows.gif')
+                img(style="position: absolute; height: 256px; width: 19px; left: 8px;", src="/images/color_picker_bar.png")
+                img#arrows(style="position: absolute; height: 9px; width: 35px; left: 0px;", src="/images/color_picker_arrows.gif")
             div#Qc
                 div#QcSc
                     div#quickColor
                     div#staticColor
                     div.staticColorFixed
                 br
-                table(width='100%', style='position: absolute; top: 55px;')
+                table(width="100%", style="position: absolute; top: 55px;")
                     tr
                         td Hex:
                         td
-                            input(size='8', type='text', id='hexBox', onchange='hexBoxChanged();')
+                            input(size="8", type="text", id="hexBox", onchange="hexBoxChanged();")
                     tr
                         td Red:
                         td
-                            input(size='8', type='text', id='redBox', onchange='redBoxChanged();')
+                            input(size="8", type="text", id="redBox", onchange="redBoxChanged();")
                     tr
                         td Green:
                         td
-                            input(size='8', type='text', id='greenBox', onchange='greenBoxChanged();')
+                            input(size="8", type="text", id="greenBox", onchange="greenBoxChanged();")
                     tr
                         td Blue:
                         td
-                            input(size='8', type='text', id='blueBox', onchange='blueBoxChanged();')
+                            input(size="8", type="text", id="blueBox", onchange="blueBoxChanged();")
                     tr
                         td Hue:
                         td
-                            input(size='8', type='text', id='hueBox', onchange='hueBoxChanged();')
+                            input(size="8", type="text", id="hueBox", onchange="hueBoxChanged();")
                     tr
                         td Saturation:
                         td
-                            input(size='8', type='text', id='saturationBox', onchange='saturationBoxChanged();')
+                            input(size="8", type="text", id="saturationBox", onchange="saturationBoxChanged();")
                     tr
                         td Value:
                         td
-                            input(size='8', type='text', id='valueBox', onchange='valueBoxChanged();')
+                            input(size="8", type="text", id="valueBox", onchange="valueBoxChanged();")
                     tr
                         td
                             button#cpOK OK

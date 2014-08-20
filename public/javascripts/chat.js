@@ -32,6 +32,8 @@
         var MODE_ERASER = 'eraser';
         var MODE_SPUIT = 'spuit';
 
+        var MESSAGE_LENGTH_MAX = Number($('#message').attr('maxlength'));
+
         //------------------------------
         // 変数
         //------------------------------
@@ -98,6 +100,15 @@
         // 下描きモード制御用
         var isRoughMode = false;
 
+        // チャットウィンドウ表示制御用
+        var isChatVisible = false;
+
+        // チャット送信可否フラグ
+        var canSendMessage = false;;
+
+        // チャットウィンドウのdrag、resize中にcanvasのmousemoveイベントを無効化するために使用
+        var isMousemoveDisabled = false;
+
         // ホイール操作用ショートカットキー
         var key_width_pressed = false;
 
@@ -136,6 +147,25 @@
         new dragObject('arrows', 'hueBarDiv', arrowsLowBounds, arrowsUpBounds, arrowsDown, arrowsMoved, endMovement);
         new dragObject('circle', 'gradientBox', circleLowBounds, circleUpBounds, circleDown, circleMoved, endMovement);
 
+        // チャットウィンドウの初期化
+        $('#chatWindow').draggable({
+            containment: 'parent',
+            cursor: 'move',
+            scroll: false,
+            start: function (event, ui) { isMousemoveDisabled = true; },
+            stop: function (event, ui) { isMousemoveDisabled = false; },
+        }).resizable({
+            containment: 'parent',
+            minWidth: 300,
+            minHeight: 240,
+            alsoResize: '#chatLog',
+            start: function (event, ui) { isMousemoveDisabled = true; },
+            stop: function (event, ui) { isMousemoveDisabled = false; },
+            resize: function (event, ui) {
+                $('#message').css('width', $('#chatWindow').width() - 60 + 'px');
+            }
+        });
+
         // serverに接続
         socket = io.connect('/', { 'reconnect': false });
 
@@ -169,8 +199,14 @@
                     endTimer();
                     var dataSize = (new Blob([JSON.stringify(res.imageLog)], { type: 'application/json' })).size;
                     console.log('データサイズ : ' + dataSize);
+
+                    res.messages.reverse().forEach(function (message) {
+                        writeMessage(message);
+                    });
+
                     // todo : canvasの描画が終わる前にこの処理が実行されている？
                     isDisabled = false;
+                    canSendMessage = true;
                 } else {
                     alert('予期しないエラーです');
                 }
@@ -230,6 +266,20 @@
             clearCanvas(mainContext);
         });
 
+        /**
+         * チャットデータを受け取る
+         */
+        socket.on('push message', function (data) {
+            'use strict';
+            // console.log('push message');
+
+            writeMessage(data);
+
+            if (!isChatVisible) {
+                $('#chatButton').addClass('new');
+            }
+        });
+
         //------------------------------
         // Canvas イベントハンドラ
         //------------------------------
@@ -268,7 +318,11 @@
         $('#cursorCanvas').mousemove(function (e) {
             'use strict';
             // console.log('mouse move');
+
+            if (isMousemoveDisabled) return true;
+
             e.stopPropagation();
+
             if (isDisabled) return false;
 
             if (drawFlag) {
@@ -315,6 +369,7 @@
             'use strict';
             // console.log('mouse leave');
             e.stopPropagation();
+
             if (isDisabled) return;
 
             drawFlag = false;
@@ -326,6 +381,9 @@
         $('#cursorCanvas').mousemove(function (e) {
             'use strict';
             // console.log('mouse move');
+
+            if (isMousemoveDisabled) return;
+
             e.stopPropagation();
 
             if (isRoughMode) updateRoughIndicator();
@@ -513,9 +571,9 @@
         /**
          * 保存ボタンをクリック
          */
-        $('#save').on('click', function (e) {
+        $('#saveButton').on('click', function (e) {
             'use strict';
-            // console.log('#save click');
+            // console.log('#saveButton click');
             e.stopPropagation();
             if (isDisabled) return;
 
@@ -548,9 +606,9 @@
         /**
          * クリアボタンをクリック
          */
-        $('#clear').on('click', function (e) {
+        $('#clearButton').on('click', function (e) {
             'use strict';
-            // console.log('#clear click');
+            // console.log('#clearButton click');
             e.stopPropagation();
             if (isDisabled) return;
 
@@ -598,20 +656,31 @@
         /**
          * ログボタンをクリック
          */
-        $('#log').on('click', function (e) {
+        $('#logButton').on('click', function (e) {
             'use strict';
-            // console.log('#log click');
+            // console.log('#logButton click');
             e.stopPropagation();
 
             window.open('/' + getIdFromUrl() + '/log/1/');
         });
 
         /**
+         * チャットボタンをクリック
+         */
+        $('#chatButton').on('click', function (e) {
+            'use strict';
+            // console.log('#chatButton click');
+            e.stopPropagation();
+
+            toggleChatWindow();
+        });
+
+        /**
          * ヘルプボタンをクリック
          */
-        $('#help').on('click', function (e) {
+        $('#helpButton').on('click', function (e) {
             'use strict';
-            // console.log('#help click');
+            // console.log('#helpButton click');
             e.stopPropagation();
 
             var dom = $('<a />');
@@ -625,6 +694,40 @@
                 transition: 'none',
                 closeButton: true,
                 open: true,
+            });
+        });
+
+        /**
+         * チャット送信ボタンをクリック
+         */
+        $('#messageButton').on('click', function (e) {
+            'use strict';
+            // console.log('#messageButton click');
+            e.stopPropagation();
+
+            var message = $('#message').val().trim();
+
+            if (message == null ||
+                message.length === 0 ||
+                MESSAGE_LENGTH_MAX < message.length) return;
+
+            // 連投防止
+            if (!canSendMessage) {
+                return;
+            }
+
+            socket.emit('send message', message, function (res) {
+                if (res.result === RESULT_OK) {
+                    $('#message').val('');
+                    canSendMessage = false;
+                    $('#messageButton').addClass('disabled');
+                    setTimeout(function () {
+                        canSendMessage = true;
+                        $('#messageButton').removeClass('disabled');
+                    }, 10000);
+                } else {
+                    alert('メッセージの送信に失敗しました。');
+                }
             });
         });
 
@@ -681,6 +784,9 @@
             } else if (e.keyCode === 82) {
                 // R
                 toggleRoughMode();
+            } else if (e.keyCode === 77) {
+                // M
+                toggleChatWindow();
             }
         });
         $(window).on('wheel', function (e) {
@@ -898,6 +1004,25 @@
                     left = (winWidth - label.width() - 15) + 'px';
                     label.css('left', left).css('display', 'block');
                 }
+            }
+        }
+
+        /**
+         * チャットウィンドウ表示切替
+         */
+        function toggleChatWindow () {
+            'use strict';
+            // console.log('toggleChatWindow');
+
+            $('#chatButton').removeClass('new');
+
+            isChatVisible = !isChatVisible;
+            if (isChatVisible) {
+                $('#chatButton').addClass('active');
+                $('#chatWindow').removeClass('displayNone');
+            } else {
+                $('#chatButton').removeClass('active');
+                $('#chatWindow').addClass('displayNone');
             }
         }
 
@@ -1193,6 +1318,45 @@
 
             var dataUrl = thumbnailCanvas.toDataURL('image/png');
             return dataUrl.split(',')[1];
+        }
+
+        /**
+         * チャットメッセージを表示する
+         */
+        function writeMessage (data) {
+            'use strict';
+            // console.log('writeMessage');
+
+            $('#chatLog')
+                .append('<hr>')
+                .append('<p title="' + formatDate(data.time) + '">' + escapeHTML(data.message) + '</p>');
+        }
+
+        /**
+         * HTMLエスケープ
+         */
+        function escapeHTML(html) {
+            'use strict';
+            // console.log('escapeHTML');
+
+            return $('<div>').text(html).html();
+        }
+
+        /**
+         * 日付をフォーマット
+         */
+        function formatDate (date) {
+            'use strict';
+            // console.log('formatDate');
+
+            date = new Date(Date.parse(date));
+            return date.getFullYear()
+                + '-' + ('0' + (date.getMonth() + 1)).slice(-2)
+                + '-' + ('0' + date.getDate()).slice(-2)
+                + ' ' + ('0' + date.getHours()).slice(-2)
+                + ':' + ('0' + date.getMinutes()).slice(-2)
+                + ':' + ('0' + date.getSeconds()).slice(-2)
+                + '.' + ('00' + date.getMilliseconds()).slice(-3);
         }
 
         /**
