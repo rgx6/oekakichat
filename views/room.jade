@@ -14,11 +14,11 @@ block body
     div.outline(style="width: #{width}px; height: #{height+28}px;")
         div#toolbar.toolbar(style="width: #{width}px; height: 28px;")
             div.drawTool
-                label#brush.toggle.active 筆
-                label#eraser.toggle 消
-                label#spuit.toggle 吸
-                label#mask.toggle マ
-                label#rough.toggle 下
+                label#brush.toggle.active(title="ブラシ") 筆
+                label#eraser.toggle(title="消しゴム") 消
+                label#spuit.toggle(title="スポイト") 吸
+                label#mask.toggle(title="マスク") マ
+                label#rough.toggle(title="下描き") 下
             div#pallet.pallet
                 #color1.selectedColor
                 #color2
@@ -29,25 +29,25 @@ block body
                 #color7
                 #color8
             div.brushSize
-                div#brushSizeSlider.brushSizeRange
+                div#brushSizeSlider.brushSizeRange(title="太さ")
                 canvas#brushSizeCanvas.brushSizeCanvas(width="25px", height="25px")
             div
-                label#saveButton.function 保
-                label#clearButton.function 無
-                label#logButton.function log
-                label#chatButton.toggle 話
-                label#helpButton.function ？
+                label#saveButton.function(title="保存") 保
+                label#clearButton.function(title="保存してクリア") 無
+                label#logButton.function(title="お絵かきログ") log
+                label#chatButton.toggle(title="チャット") 話
+                label#helpButton.function(title="ヘルプ") ？
             div.info
                 label#userCount.userCount
                 label#globalUserCount.userCount
             div.clear
-        div.canvas#canvasArea
+        div#canvasArea.canvas
             canvas#combinationCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#roughCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#mainCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#cursorCanvas.mainCanvas(width="#{width}px", height="#{height}px")
-        div.chat.displayNone#chatWindow
-            div.chatLog#chatLog
+        div#chatWindow.chat.displayNone
+            div#chatLog.chatLog
             div.message
                 input#message(type="text", maxlength="#{messageLengthMax}")
                 label#messageButton 送信
