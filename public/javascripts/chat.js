@@ -738,6 +738,9 @@
             'use strict';
             // console.log('window ' + e.type + ' ' + e.keyCode);
 
+            // チャット入力中は無効化
+            if (document.activeElement.id === 'message') return;
+
             switch(e.keyCode) {
                 case 84: // T
                     if (e.type === 'keydown') {
@@ -751,9 +754,12 @@
                     break;
             }
         });
-        $(window).keyup(function (e) {
+        $(window).on('keyup', function (e) {
             'use strict';
             // console.log('window keyup ' + e.keyCode);
+
+            // チャット入力中は無効化
+            if (document.activeElement.id === 'message') return;
 
             if (49 <= e.keyCode && e.keyCode <= 56) {
                 // 1-8 色選択
