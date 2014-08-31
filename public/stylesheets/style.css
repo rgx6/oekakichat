@@ -206,7 +206,7 @@ table input, table td {
 /**
 * チャット
 */
-.chat {
+.chatWindow {
   position: fixed;
   top: 80px;
   left: 290px;
@@ -218,31 +218,68 @@ table input, table td {
   opacity: 0.95;
 }
 
-.chatLog {
-  height: 219px;
+.chatHeader {
+  height: 20px;
+  border: solid;
+  border-width: 0px 0px 1px 0px;
+}
+
+.dragHandle {
+  float: left;
+  background-color: #bdc3c7;
+  height: 20px;
+  width: 222px;
+}
+
+.chatHeader label {
+  display: block;
+  float: left;
+  cursor: pointer;
+  width: 25px;
+  height: 20px;
+  border: solid;
+  border-width: 0px 0px 0px 1px;
+  border-color: #000;
+  background-color: #2980b9;
+  color: #fff;
+  font-size: 15px;
+  text-align: center;
+  line-height: 20px;
+}
+
+.chatHeader label:hover {
+  background-color: #3498db;
+}
+
+.chatHeader label.disabled {
+  background-color: #eee;
+}
+
+.chatMessage {
+  height: 198px;
   overflow-y: scroll;
   word-wrap: break-word;
   font-size: 15px;
 }
 
-.chatLog p {
+.chatMessage p {
   margin: 0 5px 0 5px;
 }
 
-.chatLog hr {
+.chatMessage hr {
   margin: 2px 2%;
   height: 1px;
   background-color: #ddd;
   border: none;
 }
 
-.message {
+.chatFooter {
   height: 20px;
   border: solid;
   border-width: 1px 0px 0px 0px;
 }
 
-.message input {
+.chatFooter input {
   float: left;
   width: 240px;
   height: 20px;
@@ -250,7 +287,7 @@ table input, table td {
   padding: 0;
 }
 
-.message label {
+.chatFooter label {
   display: block;
   float: left;
   cursor: pointer;
@@ -266,11 +303,11 @@ table input, table td {
   line-height: 20px;
 }
 
-.message label:hover {
+.chatFooter label:hover {
   background-color: #3498db;
 }
 
-.message label.disabled {
+.chatFooter label.disabled {
   background-color: #eee;
 }
 

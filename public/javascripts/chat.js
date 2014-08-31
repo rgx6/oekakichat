@@ -104,7 +104,9 @@
         var isChatVisible = false;
 
         // チャット送信可否フラグ
-        var canSendMessage = false;;
+        var canSendMessage = false;
+        // チャットリクエスト可否フラグ
+        var canGetMessage = false;
 
         // チャットウィンドウのdrag、resize中にcanvasのmousemoveイベントを無効化するために使用
         var isMousemoveDisabled = false;
@@ -149,6 +151,7 @@
 
         // チャットウィンドウの初期化
         $('#chatWindow').draggable({
+            handle: '#dragHandle',
             containment: 'parent',
             cursor: 'move',
             scroll: false,
@@ -158,11 +161,13 @@
             containment: 'parent',
             minWidth: 300,
             minHeight: 240,
-            alsoResize: '#chatLog',
+            alsoResize: '#chatMessage',
             start: function (event, ui) { isMousemoveDisabled = true; },
             stop: function (event, ui) { isMousemoveDisabled = false; },
             resize: function (event, ui) {
-                $('#message').css('width', $('#chatWindow').width() - 60 + 'px');
+                var width = $('#chatWindow').width();
+                $('#dragHandle').css('width', width - 78 + 'px');
+                $('#message').css('width', width - 60 + 'px');
             }
         });
 
@@ -201,8 +206,15 @@
                     console.log('データサイズ : ' + dataSize);
 
                     res.messages.reverse().forEach(function (message) {
-                        writeMessage(message);
+                        appendChatMessage(message);
                     });
+                    if (res.messages.length === 0) {
+                        $('#chatLog').addClass('disabled');
+                    } else {
+                        canGetMessage = true;
+                    }
+
+                    // todo : chatを末尾にスクロール
 
                     // todo : canvasの描画が終わる前にこの処理が実行されている？
                     isDisabled = false;
@@ -273,7 +285,15 @@
             'use strict';
             // console.log('push message');
 
-            writeMessage(data);
+            var scrollTop = $('#chatMessage').scrollTop();
+            var scrollHeight = $('#chatMessage').get(0).scrollHeight;
+            var height = $('#chatMessage').height();
+            if (scrollTop === scrollHeight - height) {
+                appendChatMessage(data);
+                $('#chatMessage').animate({scrollTop: $('#chatMessage').get(0).scrollHeight}, 2000);
+            } else {
+                appendChatMessage(data);
+            }
 
             if (!isChatVisible) {
                 $('#chatButton').addClass('new');
@@ -695,6 +715,70 @@
                 closeButton: true,
                 open: true,
             });
+        });
+
+        /**
+         * チャット ログボタンをクリック
+         */
+        $('#chatLog').on('click', function (e) {
+            'use strict';
+            // console.log('#chatLog click');
+            e.stopPropagation();
+
+            // 連打防止
+            if (!canGetMessage) return;
+
+            var date = $('#chatMessage p:first').attr('title');
+            if (date == null) return;
+
+            canGetMessage = false;
+
+            socket.emit('request message', date, function (res) {
+                'use strict';
+                // console.log('request message callback');
+
+                if (res.result === RESULT_BAD_PARAM) {
+                    alert('不正なパラメータです');
+                    canGetMessage = true;
+                } else if (res.result === RESULT_OK) {
+                    res.messages.forEach(function (message) {
+                        prependChatMessage(message);
+                    });
+
+                    if (res.messages.length === 0) {
+                        $('#chatLog').addClass('disabled');
+                    } else {
+                        canGetMessage = true;
+                    }
+
+                    $('#chatMessage').scrollTop(0);
+                } else {
+                    alert('予期しないエラーです');
+                    canGetMessage = true;
+                }
+            });
+        });
+
+        /**
+         * チャット ∧ボタンをクリック
+         */
+        $('#chatFirst').on('click', function (e) {
+            'use strict';
+            // console.log('#chatFirst click');
+            e.stopPropagation();
+
+            $('#chatMessage').scrollTop(0);
+        });
+
+        /**
+         * チャット ∨ボタンをクリック
+         */
+        $('#chatLast').on('click', function (e) {
+            'use strict';
+            // console.log('#chatLast click');
+            e.stopPropagation();
+
+            $('#chatMessage').scrollTop($('#chatMessage').get(0).scrollHeight);
         });
 
         /**
@@ -1329,13 +1413,21 @@
         /**
          * チャットメッセージを表示する
          */
-        function writeMessage (data) {
+        function prependChatMessage (data) {
             'use strict';
-            // console.log('writeMessage');
+            // console.log('prependChatMessage');
 
-            $('#chatLog')
-                .append('<hr>')
-                .append('<p title="' + formatDate(data.time) + '">' + escapeHTML(data.message) + '</p>');
+            $('#chatMessage')
+                .prepend('<hr>')
+                .prepend('<p title="' + formatDate(data.time) + '">' + escapeHTML(data.message) + '</p>');
+        }
+        function appendChatMessage (data) {
+            'use strict';
+            // console.log('appendChatMessage');
+
+            $('#chatMessage')
+                .append('<p title="' + formatDate(data.time) + '">' + escapeHTML(data.message) + '</p>')
+                .append('<hr>');
         }
 
         /**

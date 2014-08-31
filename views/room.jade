@@ -46,12 +46,19 @@ block body
             canvas#roughCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#mainCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#cursorCanvas.mainCanvas(width="#{width}px", height="#{height}px")
-        div#chatWindow.chat.displayNone
-            div#chatLog.chatLog
-            div.message
+        div#chatWindow.chatWindow.displayNone
+            div.chatHeader
+                div#dragHandle.dragHandle
+                    チャット
+                label#chatLog(title="もっと前のログ") log
+                label#chatFirst(title="一番上へ") ∧
+                label#chatLast(title="一番下へ") ∨
+                div.clear
+            div#chatMessage.chatMessage
+            div.chatFooter
                 input#message(type="text", maxlength="#{messageLengthMax}")
                 label#messageButton 送信
-            div.clear
+                div.clear
         div
             label#roughIndicator 下描き
         div#cp.cp(style="display: none; position: fixed; background-color: #fff;")

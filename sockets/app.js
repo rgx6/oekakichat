@@ -24,6 +24,8 @@ var WIDTH_MAX         = exports.WIDTH_MAX         = 2000;
 var HEIGHT_MIN        = exports.HEIGHT_MIN        = 300;
 var HEIGHT_MAX        = exports.HEIGHT_MAX        = 2000;
 
+var CHAT_LOG_LIMIT_PER_REQUEST = 50;
+
 var MESSAGE_LENGTH_MAX = exports.MESSAGE_LENGTH_MAX = 100;
 
 var LOGGER_INTERVAL_SECOND = 20;
@@ -175,7 +177,7 @@ exports.onConnection = function (client) {
             var messages = [];
             var query = db.Chat.find({ roomId: id, isDeleted: false })
                     .select({ message: 1, registeredTime: 1 })
-                    .limit(50)
+                    .limit(CHAT_LOG_LIMIT_PER_REQUEST)
                     .sort({ registeredTime: 'desc' });
             query.exec(function (err, docs) {
                 if (err) {
@@ -259,6 +261,50 @@ exports.onConnection = function (client) {
             callback({ result: RESULT_OK });
             server.sockets.to(id).emit('push message', { message: message, time: now });
             return;
+        });
+    });
+
+    /**
+     * チャットデータリクエスト
+     */
+    client.on('request message', function (data, callback) {
+        'use strict';
+        // logger.debug('request message : ' + client.id);
+
+        var id;
+        client.get(KEY_ID, function (err, _id) {
+            if (err || !_id) { return; }
+            id = _id;
+        });
+
+        if (isUndefinedOrNull(rooms[id])) return;
+
+        if (isUndefinedOrNull(data) ||
+            isNaN(Date.parse(data))) {
+            logger.warn('request message : ' + client.id + ' : ' + RESULT_BAD_PARAM + ' : ' + data);
+            callback({ result: RESULT_BAD_PARAM });
+            return;
+        }
+
+        var messages = [];
+        var query = db.Chat.find({ roomId: id, isDeleted: false, registeredTime: { $lt: data } })
+                .select({ message: 1, registeredTime: 1 })
+                .limit(CHAT_LOG_LIMIT_PER_REQUEST)
+                .sort({ registeredTime: 'desc' });
+        query.exec(function (err, docs) {
+            if (err) {
+                logger.error(err);
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
+            }
+            docs.forEach(function (doc) {
+                messages.push({ message: doc.message, time: doc.registeredTime });
+            });
+
+            callback({
+                result:   RESULT_OK,
+                messages: messages,
+            });
         });
     });
 
