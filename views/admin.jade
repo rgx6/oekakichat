@@ -1,0 +1,22 @@
+extends layout
+block head
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
+    script(type="application/javascript", src="/socket.io/socket.io.js")
+    script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
+    script(type="application/javascript", src="/javascripts/admin.js")
+block body
+    div#authentication.displayNone
+        h2 認証
+        input#password(type="text")
+        button#buttonAuth 認証
+    div#function.displayNone
+        div#performance
+            h2 パフォーマンス
+            button#buttonPerformance 更新
+        div#roomList
+            h2 部屋一覧
+            button#buttonRoomList 更新
+            table.roomList
+        div#saveData
+            h2 お絵かきデータ保存
+            button#buttonSaveData 保存

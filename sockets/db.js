@@ -39,9 +39,20 @@
     ChatSchema.set('autoIndex', false);
     mongoose.model('Chat', ChatSchema);
 
+    var TemporaryLogSchema = new Schema({
+        roomId:         { type: String, require: true, index: true },
+        log:            { type: Schema.Types.Mixed, require: true },
+        registeredTime: { type: Date, require: true },
+        updatedTime:    { type: Date, require: true },
+        isDeleted:      { type: Boolean, require: true },
+    });
+    TemporaryLogSchema.set('autoIndex', false);
+    mongoose.model('TemporaryLog', TemporaryLogSchema);
+
     mongoose.connect('mongodb://localhost/OekakiChat');
 
     exports.Room = mongoose.model('Room');
     exports.Log = mongoose.model('Log');
     exports.Chat = mongoose.model('Chat');
+    exports.TemporaryLog = mongoose.model('TemporaryLog');
 })();

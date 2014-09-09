@@ -186,6 +186,13 @@ exports.config = function (req, res) {
 };
 
 /**
+ * 管理者用ページ
+ */
+exports.admin = function (req, res) {
+    res.render('admin', { title: APP_TITLE });
+};
+
+/**
  * ヘルプ
  */
 exports.help = function (req, res) {

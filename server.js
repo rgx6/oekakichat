@@ -53,6 +53,7 @@ app.use(function (req, res) {
 // routing
 var appRoot = '/';
 app.get(appRoot, routes.index);
+app.get(appRoot + 'admin/', routes.admin);
 app.get(appRoot + 'help/', routes.help);
 app.get(appRoot + 'config/:configid/', routes.config);
 app.get(appRoot + ':id/', routes.room);

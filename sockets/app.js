@@ -1,17 +1,20 @@
-var fs = require('fs');
-var uuid = require('node-uuid');
-var log4js = require('log4js');
-var logger = log4js.getLogger('appLog');
-var Promise  = require('es6-promise').Promise;
-var server = require('../server.js');
-var db = require('./db.js');
-var Room = require('./Room.js').Room;
+var fs      = require('fs');
+var uuid    = require('node-uuid');
+var log4js  = require('log4js');
+var logger  = log4js.getLogger('appLog');
+var Promise = require('es6-promise').Promise;
+var notp    = require('notp');
+var server  = require('../server.js');
+var db      = require('./db.js');
+var Room    = require('./Room.js').Room;
+var config  = require('../configuration.js');
 
 var RESULT_OK                 = 'ok';
 var RESULT_BAD_PARAM          = 'bad param';
 var RESULT_SYSTEM_ERROR       = 'system error';
 var RESULT_ROOM_NOT_EXISTS    = 'room not exists';
 var RESULT_ROOM_NOT_AVAILABLE = 'room not available';
+var RESULT_ROOM_INITIALIZING  = 'room initializing';
 
 var KEY_ID = 'id';
 
@@ -28,16 +31,12 @@ var CHAT_LOG_LIMIT_PER_REQUEST = 50;
 
 var MESSAGE_LENGTH_MAX = exports.MESSAGE_LENGTH_MAX = 100;
 
-var LOGGER_INTERVAL_SECOND = 20;
+var adminClientId = '';
 
 var rooms = {};
 
 var globalUserCount = 0;
 var roomsUserCount = 0;
-
-var performanceLogger = setInterval(function () {
-    logger.info('connectionCount: ' + globalUserCount + ', memoryUsage: ' + JSON.stringify(process.memoryUsage()));
-}, LOGGER_INTERVAL_SECOND * 1000);
 
 // サンプル作成
 db.Room.update({
@@ -160,39 +159,72 @@ exports.onConnection = function (client) {
                 return;
             }
 
-            if (isUndefinedOrNull(rooms[id])) {
-                rooms[id] = new Room(id);
-            }
-
-            var room = rooms[id];
-
-            client.set(KEY_ID, id);
-            client.join(id);
-
-            room.userCount += 1;
-            roomsUserCount += 1;
-            updateUserCount(id);
-
-            // チャットログ
-            var messages = [];
-            var query = db.Chat.find({ roomId: id, isDeleted: false })
-                    .select({ message: 1, registeredTime: 1 })
-                    .limit(CHAT_LOG_LIMIT_PER_REQUEST)
-                    .sort({ registeredTime: 'desc' });
-            query.exec(function (err, docs) {
-                if (err) {
-                    logger.error(err);
-                    callback({ result: RESULT_SYSTEM_ERROR });
+            new Promise(function (resolve, reject) {
+                if (!isUndefinedOrNull(rooms[id])) {
+                    if (rooms[id].isInitialized) {
+                        resolve();
+                    } else {
+                        logger.warn('enter room initializing');
+                        callback({ result: RESULT_ROOM_INITIALIZING });
+                        reject(new Error('enter room initializing'));
+                    }
                     return;
                 }
-                docs.forEach(function (doc) {
-                    messages.push({ message: doc.message, time: doc.registeredTime });
-                });
 
-                callback({
-                    result:   RESULT_OK,
-                    imageLog: room.imageLog,
-                    messages: messages,
+                rooms[id] = new Room(id, doc.name);
+
+                var q = db.TemporaryLog
+                        .findOne({ roomId: id, isDeleted: false })
+                        .select({ log: 1 });
+                q.exec(function (err, doc) {
+                    if (err) {
+                        delete rooms[id];
+                        logger.error(err);
+                        callback({ result: RESULT_SYSTEM_ERROR });
+                        reject(new Error('TemporaryLog findOne failed'));
+                        return;
+                    }
+                    if (doc) {
+                        rooms[id].imageLog = doc.log;
+                    }
+
+                    rooms[id].isInitialized = true;
+                    resolve();
+                    return;
+                });
+            }).then(function () {
+                var room = rooms[id];
+
+                client.set(KEY_ID, id);
+                client.join(id);
+
+                room.userCount += 1;
+                roomsUserCount += 1;
+                updateUserCount(id);
+
+                // todo : 接続後に改めてclientからrequestさせる
+                // チャットログ
+                var messages = [];
+                var query = db.Chat
+                        .find({ roomId: id, isDeleted: false })
+                        .select({ message: 1, registeredTime: 1 })
+                        .limit(CHAT_LOG_LIMIT_PER_REQUEST)
+                        .sort({ registeredTime: 'desc' });
+                query.exec(function (err, docs) {
+                    if (err) {
+                        logger.error(err);
+                        callback({ result: RESULT_SYSTEM_ERROR });
+                        return;
+                    }
+                    docs.forEach(function (doc) {
+                        messages.push({ message: doc.message, time: doc.registeredTime });
+                    });
+
+                    callback({
+                        result:   RESULT_OK,
+                        imageLog: room.imageLog,
+                        messages: messages,
+                    });
                 });
             });
         });
@@ -329,7 +361,16 @@ exports.onConnection = function (client) {
             return;
         }
 
-        saveImage(id, data, true, callback);
+        saveImage(id, data)
+            .then(deleteTemporaryLog)
+            .then(function () {
+                rooms[id].deleteImage();
+                server.sockets.to(id).emit('push clear canvas');
+                callback({ result: RESULT_OK });
+            })
+            .catch(function () {
+                callback({ result: RESULT_SYSTEM_ERROR });
+            });
     });
 
     /**
@@ -353,7 +394,13 @@ exports.onConnection = function (client) {
             return;
         }
 
-        saveImage(id, data, false, callback);
+        saveImage(id, data)
+            .then(function () {
+                callback({ result: RESULT_OK });
+            })
+            .catch(function () {
+                callback({ result: RESULT_SYSTEM_ERROR });
+            });
     });
 
     /**
@@ -363,13 +410,18 @@ exports.onConnection = function (client) {
         'use strict';
         logger.debug('disconnect : ' + client.id);
 
+        globalUserCount -= 1;
+
+        if (adminClientId === client.id) {
+            adminClientId = '';
+            return;
+        }
+
         var id;
         client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) { return; }
+            if (err || !_id) return;
             id = _id;
         });
-
-        globalUserCount -= 1;
 
         if (isUndefinedOrNull(rooms[id])) return;
         rooms[id].userCount -= 1;
@@ -377,32 +429,116 @@ exports.onConnection = function (client) {
         updateUserCount(id);
     });
 
-    //------------------------------
-    // メソッド定義
-    //------------------------------
+    /**
+     * 管理ページ 認証
+     */
+    client.on('admin authentication', function (password, callback) {
+        'use strict';
+        logger.info('admin authentication : ' + password);
+
+        var key = config.secretKey;
+        logger.debug(notp.totp.gen(key, { time: 30 }));
+
+        if (key !== '' && notp.totp.verify(password, key, { window: 1, time: 30 })) {
+            adminClientId = client.id;
+            callback({ result: RESULT_OK });
+        } else {
+            callback({ result: RESULT_BAD_PARAM });
+        }
+    });
 
     /**
-     * 接続数更新
+     * 管理ページ パフォーマンス取得
      */
-    function updateUserCount (id) {
+    client.on('admin performance', function (callback) {
         'use strict';
-        logger.debug('updateUserCount');
+        logger.debug('admin performance : ' + client.id);
 
-        server.sockets.to(id).emit('update user count', rooms[id].userCount);
-        server.sockets.emit('update rooms user count', roomsUserCount);
-    }
+        if (adminClientId !== client.id) {
+            client.disconnect();
+            return;
+        }
+
+        callback({
+            connectionCount: globalUserCount,
+            memoryUsage: process.memoryUsage(),
+        });
+    });
 
     /**
-     * 画像をファイルに保存する関数
+     * 管理ページ 部屋一覧取得
      */
-    function saveImage (id, data, clearFlag, callback) {
+    client.on('admin room list', function (callback) {
         'use strict';
-        logger.debug('saveImage');
+        logger.debug('admin room list : ' + client.id);
 
+        if (adminClientId !== client.id) {
+            client.disconnect();
+            return;
+        }
+
+        var roomList = [];
+        Object.keys(rooms).forEach(function (id) {
+            roomList.push({
+                id: rooms[id].id,
+                name: rooms[id].name,
+                size: JSON.stringify(rooms[id].imageLog).length,
+                userCount: rooms[id].userCount,
+            });
+        });
+        callback(roomList);
+    });
+
+    /**
+     * 管理ページ お絵かきデータ保存
+     */
+    client.on('admin save data', function (callback) {
+        'use strict';
+        logger.info('admin save data : ' + client.id);
+
+        if (adminClientId !== client.id) {
+            client.disconnect();
+            return;
+        }
+
+        var result = [];
+        Object.keys(rooms).reduce(function (sequence, roomid) {
+            return sequence.then(function () {
+                return saveTemporaryLog(roomid, result);
+            });
+        }, Promise.resolve()).then(function () {
+            callback(result);
+        });
+    });
+};
+
+//------------------------------
+// メソッド定義
+//------------------------------
+
+/**
+ * 接続数更新
+ */
+function updateUserCount (id) {
+    'use strict';
+    logger.debug('updateUserCount');
+
+    server.sockets.to(id).emit('update user count', rooms[id].userCount);
+}
+
+/**
+ * 画像をファイルに保存する関数
+ */
+function saveImage (id, data) {
+    'use strict';
+    logger.debug('saveImage');
+
+    return new Promise(function (resolve, reject) {
         if (isUndefinedOrNull(data) ||
             isUndefinedOrNull(data.png) ||
             isUndefinedOrNull(data.thumbnailPng)) {
-            callback({ result: RESULT_BAD_PARAM });
+            logger.warn('save image bad param');
+            reject(new Error('bad param'));
             return;
         }
 
@@ -416,7 +552,7 @@ exports.onConnection = function (client) {
         fs.writeFile(path, buf, function (err) {
             if (err) {
                 logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
+                reject(new Error('save image failed'));
                 return;
             }
 
@@ -426,7 +562,7 @@ exports.onConnection = function (client) {
             fs.writeFile(path, buf, function (err) {
                 if (err) {
                     logger.error(err);
-                    callback({ result: RESULT_SYSTEM_ERROR });
+                    reject(new Error('save thumbnail image failed'));
                     return;
                 }
 
@@ -439,38 +575,101 @@ exports.onConnection = function (client) {
                 log.save(function (err, doc) {
                     if (err) {
                         logger.error(err);
-                        callback({ result: RESULT_SYSTEM_ERROR });
+                        reject(new Error('save image log failed'));
                         return;
                     }
 
-                    if (clearFlag) {
-                        rooms[id].deleteImage();
-                        server.sockets.to(id).emit('push clear canvas');
-                        callback({ result: RESULT_OK });
-                        return;
-                    } else {
-                        callback({ result: RESULT_OK });
-                        return;
-                    }
+                    resolve(id);
+                    return;
                 });
             });
         });
-    }
-};
-
-//------------------------------
-// メソッド定義
-//------------------------------
+    });
+}
 
 /**
- * HTMLエスケープ処理
+ * 一時お絵かきデータを無効化する
  */
-function escapeHTML (str) {
+function deleteTemporaryLog (id) {
     'use strict';
-    logger.debug('escapeHTML');
+    logger.debug('deleteTemporaryLog : ' + id);
 
-    // hack : 抜けている文字がないかチェック
-    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return new Promise(function (resolve, reject) {
+        db.TemporaryLog.update({
+            roomId: id,
+            isDeleted: false,
+        }, {
+            $set: {
+                updatedTime: new Date(),
+                isDeleted: true,
+            }
+        }, {
+            multi: true
+        }, function (err, numberAffected) {
+            if (err) {
+                logger.error(err);
+                reject(new Error('delete temporary log failed'));
+                return;
+            }
+
+            resolve();
+            return;
+        });
+    });
+}
+
+/**
+ * 一時お絵かきデータを保存する
+ * エラーでもrejectせず処理を続ける
+ */
+function saveTemporaryLog (id, result) {
+    'use strict';
+    logger.debug('saveTemporaryLog : ' + id);
+
+    return new Promise(function (resolve, reject) {
+        db.TemporaryLog.update({
+            roomId: id,
+            isDeleted: false,
+        }, {
+            $set: {
+                updatedTime: new Date(),
+                isDeleted: true,
+            }
+        }, {
+            multi: true
+        }, function (err, numberAffected) {
+            if (err) {
+                logger.error(err);
+                result.push(id + ' : update failed');
+                resolve();
+                return;
+            }
+
+            if (rooms[id].imageLog.length === 0) {
+                result.push(id + ' : no data');
+                resolve();
+                return;
+            }
+
+            var log = new db.TemporaryLog();
+            log.roomId         = id;
+            log.log            = rooms[id].imageLog;
+            log.registeredTime = new Date();
+            log.updatedTime    = new Date();
+            log.isDeleted      = false;
+            log.save(function (err, doc) {
+                if (err) {
+                    logger.error(err);
+                    result.push(id + ' : save failed');
+                    resolve();
+                    return;
+                }
+                result.push(id + ' : saved');
+                resolve();
+                return;
+            });
+        });
+    });
 }
 
 /**

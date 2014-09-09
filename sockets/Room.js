@@ -4,12 +4,14 @@
     var Room = (function () {
         'use strict';
 
-        function Room(id) {
+        function Room(id, name) {
             'use strict';
 
             this.id = id;
+            this.name = name;
             this.imageLog = [];
             this.userCount = 0;
+            this.isInitialized = false;
         }
 
         Room.prototype.storeImage = function (data) {

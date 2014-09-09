@@ -388,3 +388,10 @@ table input, table td {
   margin: 2px 2px 2px 0px;
   border: solid 1px #bdc3c7;
 }
+
+/**
+* 管理ページ
+*/
+.roomList td {
+  text-align: right;
+}

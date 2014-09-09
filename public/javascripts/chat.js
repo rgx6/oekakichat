@@ -10,6 +10,7 @@
 
         var RESULT_OK        = 'ok';
         var RESULT_BAD_PARAM = 'bad param';
+        var RESULT_ROOM_INITIALIZING  = 'room initializing';
 
         var BRUSH_SIZE_MIN = 1;
         var BRUSH_SIZE_MAX = 21;
@@ -85,11 +86,6 @@
 
         // サムネイルのサイズ
         var thumbnailSize = 150;
-
-        // 部屋接続数
-        var userCount = 0;
-        // 全体の接続数
-        var roomsUserCount = 0;
 
         // モード制御用
         var currentMode = MODE_BRUSH;
@@ -194,6 +190,8 @@
 
                 if (res.result === RESULT_BAD_PARAM) {
                     alert('不正なパラメータです');
+                } else if (res.result === RESULT_ROOM_INITIALIZING) {
+                    alert('部屋を初期化中です。\n数秒待ってからページを読み込みなおしてください。');
                 } else if (res.result === RESULT_OK) {
                     // todo : 再接続時の下描きレイヤーのclearについては要検討
                     clearCanvas(mainContext);
@@ -253,19 +251,7 @@
             'use strict';
             // console.log('update user count');
 
-            userCount = data;
-            $('#userCount').text(userCount + '/' + roomsUserCount);
-        });
-
-        /**
-         * 全体の接続数を受け取る
-         */
-        socket.on('update rooms user count', function (data) {
-            'use strict';
-            // console.log('update rooms user count');
-
-            roomsUserCount = data;
-            $('#userCount').text(userCount + '/' + roomsUserCount);
+            $('#userCount').text(data);
         });
 
         /**
@@ -661,7 +647,7 @@
                         // console.log('clear canvas');
 
                         if (res.result === 'ok') {
-                            // do nothing
+                            alert('保存に成功しました');
                         } else {
                             alert('保存に失敗しました');
                         }
