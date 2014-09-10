@@ -55,7 +55,7 @@ var appRoot = '/';
 app.get(appRoot, routes.index);
 app.get(appRoot + 'admin/', routes.admin);
 app.get(appRoot + 'help/', routes.help);
-app.get(appRoot + 'config/:configid/', routes.config);
+app.get(appRoot + 'config/:configId/', routes.config);
 app.get(appRoot + ':id/', routes.room);
 app.get(appRoot + ':id/log/:page/', routes.log);
 

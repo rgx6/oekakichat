@@ -160,7 +160,7 @@ exports.log = function (req, res) {
                 return;
             }
 
-            var fileList = logDocs.map(function (x) { return x.fileName });
+            var fileList = logDocs.map(function (x) { return x.fileName; });
 
             // ページング処理
             var startIndex = ITEMS_PER_LOG_PAGE * (page - 1);
@@ -182,14 +182,22 @@ exports.log = function (req, res) {
  * 部屋設定変更
  */
 exports.config = function (req, res) {
-    res.render('config', { title: APP_TITLE, id: req.params.id, page: req.params.page });
+    res.render('config', {
+        title:         '設定 - ' + APP_TITLE,
+        configId:      req.params.configId,
+        nameLengthMax: NAME_LENGTH_LIMIT,
+        widthMin:      WIDTH_MIN,
+        widthMax:      WIDTH_MAX,
+        heightMin:     HEIGHT_MIN,
+        heightMax:     HEIGHT_MAX,
+    });
 };
 
 /**
  * 管理者用ページ
  */
 exports.admin = function (req, res) {
-    res.render('admin', { title: APP_TITLE });
+    res.render('admin', { title: '管理ページ - ' + APP_TITLE });
 };
 
 /**

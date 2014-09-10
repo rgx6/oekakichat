@@ -430,6 +430,107 @@ exports.onConnection = function (client) {
     });
 
     /**
+     * 設定ページ 初期化
+     */
+    client.on('enter config', function (configId, callback) {
+        'use strict';
+        logger.debug('enter config : ' + client.id);
+
+        if (isUndefinedOrNull(configId)) {
+            logger.warn('enter config : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            callback({ result: RESULT_BAD_PARAM });
+            return;
+        }
+
+        var query = db.Room.where({ configId: configId });
+        query.findOne(function (err, doc) {
+            if (err) {
+                logger.error(err);
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
+            }
+
+            if (isUndefinedOrNull(doc)) {
+                logger.warn('enter config : ' + client.id + ' : ' + RESULT_ROOM_NOT_EXISTS);
+                callback({ result: RESULT_ROOM_NOT_EXISTS });
+                return;
+            }
+
+            callback({
+                result:          RESULT_OK,
+                roomId:          doc.roomId,
+                name:            doc.name,
+                width:           doc.width,
+                height:          doc.height,
+                isChatAvailable: doc.isChatAvailable,
+                isLogAvailable:  doc.isLogAvailable,
+                isLogOpen:       doc.isLogOpen,
+            });
+        });
+    });
+
+    /**
+     * 設定ページ 更新
+     */
+    client.on('update config', function (data, callback) {
+        'use strict';
+        logger.debug('update config : ' + client.id);
+
+        if (isUndefinedOrNull(data)           ||
+            isUndefinedOrNull(data.roomId)    ||
+            isUndefinedOrNull(data.configId)  ||
+            isUndefinedOrNull(data.name)      ||
+            isUndefinedOrNull(data.width)     || isNaN(data.width)  ||
+            isUndefinedOrNull(data.height)    || isNaN(data.height) ||
+            isUndefinedOrNull(data.isChatAvailable) || typeof data.isChatAvailable !== TYPE_BOOLEAN ||
+            isUndefinedOrNull(data.isLogAvailable)  || typeof data.isLogAvailable  !== TYPE_BOOLEAN ||
+            isUndefinedOrNull(data.isLogOpen)       || typeof data.isLogOpen       !== TYPE_BOOLEAN) {
+            logger.warn('update config : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            callback({ result: RESULT_BAD_PARAM });
+            return;
+        }
+
+        var name = data.name.trim();
+        if (!checkParamLength(name, 1, NAME_LENGTH_LIMIT)     ||
+            !checkParamSize(data.width, WIDTH_MIN, WIDTH_MAX) ||
+            !checkParamSize(data.height, HEIGHT_MIN, HEIGHT_MAX)) {
+            logger.warn('update config : ' + client.id + ' : ' + RESULT_BAD_PARAM);
+            callback({ result: RESULT_BAD_PARAM });
+            return;
+        }
+
+        db.Room.update({
+            roomId:   data.roomId,
+            configId: data.configId,
+        }, {
+            $set: {
+                name:            name,
+                width:           data.width,
+                height:          data.height,
+                isChatAvailable: data.isChatAvailable,
+                isLogAvailable:  data.isLogAvailable,
+                isLogOpen:       data.isLogOpen,
+                updatedTime:     new Date(),
+            }
+        }, null, function (err, numberAffected) {
+            if (err) {
+                logger.error(err);
+                callback({ result: RESULT_SYSTEM_ERROR });
+                return;
+            }
+
+            if (numberAffected === 0) {
+                logger.error('update config room not exists');
+                callback({ result: RESULT_ROOM_NOT_EXISTS });
+                return;
+            }
+
+            callback({ result: RESULT_OK });
+            return;
+        });
+    });
+
+    /**
      * 管理ページ 認証
      */
     client.on('admin authentication', function (password, callback) {

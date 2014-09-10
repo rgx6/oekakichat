@@ -1,6 +1,48 @@
 extends layout
-
 block head
-
+    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
+    script(type="application/javascript", src="/socket.io/socket.io.js")
+    script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
+    script(type="application/javascript", src="/javascripts/bootstrap.min.js")
+    script(type="application/javascript", src="/javascripts/config.js")
 block body
-    p 実装中(´・ω・｀)
+    div.container(style="max-width: none; important; width: 970px;")
+        div.row
+            div.col-xs-12
+                h2 設定変更
+                form.form-horizontal.displayNone(role="form")
+                    div.form-group
+                        label.col-xs-3.control-label(for="roomName") 名前
+                        div.col-xs-7
+                            input#roomName.form-control(type="text", maxlength="#{nameLengthMax}",
+                                placeholder="#{nameLengthMax}文字以内")
+                    div.form-group
+                        label.col-xs-3.control-label(for="roomWidth") キャンバスの幅
+                        div.col-xs-2
+                            input#roomWidth.form-control(type="number", min="#{widthMin}", max="#{widthMax}",
+                                placeholder="#{widthMin}～#{widthMax}ピクセル  実際のサイズは枠線で +2 されます。")
+                    div.form-group
+                        label.col-xs-3.control-label(for="roomHeight") キャンバスの高さ
+                        div.col-xs-2
+                            input#roomHeight.form-control(type="number", min="#{heightMin}", max="#{heightMax}",
+                                placeholder="#{heightMin}～#{heightMax}ピクセル  実際のサイズは枠線とツールバーで +30 されます。")
+                    div.form-group
+                        label.col-xs-3.control-label(for="roomIsChatAvailable") お絵かきチャット使用可能
+                        div.col-xs-8
+                            label.checkbox
+                                input#roomIsChatAvailable(type="checkbox")
+                    div.form-group
+                        label.col-xs-3.control-label(for="roomIsLogAvailable") ログ閲覧可能
+                        div.col-xs-8
+                            label.checkbox
+                                input#roomIsLogAvailable(type="checkbox")
+                    div.form-group
+                        label.col-xs-3.control-label(for="roomIsLogOpen") ログを公開する
+                        div.col-xs-8
+                            label.checkbox
+                                input#roomIsLogOpen(type="checkbox")
+                                部屋のURLを知らない人にもログを公開します(実装予定)
+                            br
+                            br
+                            button#updateConfig.btn.btn-primary(type="button") 更新
