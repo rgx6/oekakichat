@@ -102,6 +102,8 @@
                             window.location.hash = 'output';
                         });
                     });
+
+                    new AddressBook().push(name, res.roomId, res.configId);
                 } else {
                     alert('予期しないエラーです');
                 }
@@ -185,7 +187,7 @@
 
             return minLength <= data.length && data.length <= maxLength;
         }
-        
+
         /**
          * 範囲のチェック
          */

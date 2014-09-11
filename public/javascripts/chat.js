@@ -167,7 +167,6 @@
             }
         });
 
-        // serverに接続
         socket = io.connect('/', { 'reconnect': false });
 
         //------------------------------
@@ -217,6 +216,8 @@
                     // todo : canvasの描画が終わる前にこの処理が実行されている？
                     isDisabled = false;
                     canSendMessage = true;
+
+                    new AddressBook().push(res.name, res.roomId);
                 } else {
                     alert('予期しないエラーです');
                 }

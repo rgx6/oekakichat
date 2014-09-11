@@ -1,0 +1,15 @@
+extends layout
+block head
+    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
+    script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
+    script(type="application/javascript", src="/javascripts/bootstrap.min.js")
+    script(type="application/javascript", src="/javascripts/my.js")
+    script(type="application/javascript", src="/javascripts/AddressBook.js")
+block body
+    div.container(style="max-width: none; important; width: 970px;")
+        div.row
+            div.col-xs-12
+                h2 アドレス帳
+                p#message.bg-danger
+                table#roomList.table.table-striped.table-hover
+                    tbody

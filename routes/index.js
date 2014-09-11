@@ -194,6 +194,13 @@ exports.config = function (req, res) {
 };
 
 /**
+ * アドレス帳ページ
+ */
+exports.my = function (req, res) {
+    res.render('my', { title: 'アドレス帳 - ' + APP_TITLE });
+};
+
+/**
  * 管理者用ページ
  */
 exports.admin = function (req, res) {

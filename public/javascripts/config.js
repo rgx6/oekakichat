@@ -65,6 +65,8 @@
                     $('title').text(res.name + ' - 設定 - お絵かきチャット');
 
                     $('form').removeClass('displayNone');
+
+                    new AddressBook().push(res.name, res.roomId, configId);
                 } else {
                     alert('予期しないエラーです');
                 }

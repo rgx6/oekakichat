@@ -5,8 +5,9 @@ block head
     script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
     script(type="application/javascript", src="/javascripts/bootstrap.min.js")
     script(type="application/javascript", src="/javascripts/index.js")
+    script(type="application/javascript", src="/javascripts/AddressBook.js")
 block body
-    div.container(style="max-width: none; important; width: 970px;") 
+    div.container(style="max-width: none; important; width: 970px;")
         div.jumbotron
             h1= title
 
@@ -30,12 +31,12 @@ block body
                                 placeholder="#{nameLengthMax}文字以内")
                     div.form-group
                         label.col-xs-2.control-label(for="roomWidth") キャンバスの幅
-                        div.col-xs-7
+                        div.col-xs-2
                             input#roomWidth.form-control(type="number", min="#{widthMin}", max="#{widthMax}",
                                 placeholder="#{widthMin}～#{widthMax}ピクセル  実際のサイズは枠線で +2 されます。")
                     div.form-group
                         label.col-xs-2.control-label(for="roomHeight") キャンバスの高さ
-                        div.col-xs-7
+                        div.col-xs-2
                             input#roomHeight.form-control(type="number", min="#{heightMin}", max="#{heightMax}",
                                 placeholder="#{heightMin}～#{heightMax}ピクセル  実際のサイズは枠線とツールバーで +30 されます。")
                     div.form-group

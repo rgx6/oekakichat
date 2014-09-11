@@ -222,6 +222,8 @@ exports.onConnection = function (client) {
 
                     callback({
                         result:   RESULT_OK,
+                        roomId:   room.id,
+                        name:     room.name,
                         imageLog: room.imageLog,
                         messages: messages,
                     });
