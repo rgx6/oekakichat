@@ -1,9 +1,5 @@
 extends layout
-block head
-    link(type="text/css", rel="stylesheet", href="/stylesheets/flick/jquery-ui.min.css")
-    link(type="text/css", rel="stylesheet", href="/stylesheets/colorpicker.css")
-    link(type="text/css", rel="stylesheet", href="/stylesheets/colorbox.css")
-    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
+block script
     script(type="application/javascript", src="/socket.io/socket.io.js")
     script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
     script(type="application/javascript", src="/javascripts/jquery-ui.min.js")
@@ -11,6 +7,11 @@ block head
     script(type="application/javascript", src="/javascripts/chat.js")
     script(type="application/javascript", src="/javascripts/AddressBook.js")
     script(type="application/javascript", src="/javascripts/ColorPicker.js")
+block link
+    link(type="text/css", rel="stylesheet", href="/stylesheets/flick/jquery-ui.min.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/colorpicker.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/colorbox.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
 block body
     div.outline(style="width: #{width}px; height: #{height+28}px;")
         div#toolbar.toolbar(style="width: #{width}px; height: 28px;")

@@ -1,12 +1,13 @@
 extends layout
-block head
-    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
-    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
+block script
     script(type="application/javascript", src="/socket.io/socket.io.js")
     script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
     script(type="application/javascript", src="/javascripts/bootstrap.min.js")
     script(type="application/javascript", src="/javascripts/config.js")
     script(type="application/javascript", src="/javascripts/AddressBook.js")
+block link
+    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
+    link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
 block body
     div.container(style="max-width: none; important; width: 970px;")
         div.row

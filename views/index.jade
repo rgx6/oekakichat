@@ -1,11 +1,16 @@
 extends layout
-block head
-    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
+block meta
+    meta(name="keywords", content="お絵かきチャット,お絵かき,チャット")
+    meta(name="description", content="お絵かきチャット")
+    meta(name="robots", content="nofollow")
+block script
     script(type="application/javascript", src="/socket.io/socket.io.js")
     script(type="application/javascript", src="/javascripts/jquery-2.1.0.min.js")
     script(type="application/javascript", src="/javascripts/bootstrap.min.js")
     script(type="application/javascript", src="/javascripts/index.js")
     script(type="application/javascript", src="/javascripts/AddressBook.js")
+block link
+    link(type="text/css", rel="stylesheet", href="/stylesheets/bootstrap.min.css")
 block body
     div.container(style="max-width: none; important; width: 970px;")
         div.jumbotron
