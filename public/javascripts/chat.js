@@ -194,11 +194,11 @@
                 } else if (res.result === RESULT_OK) {
                     // todo : 再接続時の下描きレイヤーのclearについては要検討
                     clearCanvas(mainContext);
-                    startTimer();
+                    console.time('描画');
                     res.imageLog.forEach(function (data) {
                         drawData(data);
                     });
-                    endTimer();
+                    console.timeEnd('描画');
                     var dataSize = (new Blob([JSON.stringify(res.imageLog)], { type: 'application/json' })).size;
                     console.log('データサイズ : ' + dataSize);
 
@@ -1442,19 +1442,6 @@
                 + ':' + ('0' + date.getMinutes()).slice(-2)
                 + ':' + ('0' + date.getSeconds()).slice(-2)
                 + '.' + ('00' + date.getMilliseconds()).slice(-3);
-        }
-
-        /**
-         * パフォーマンス計測用
-         */
-        var startTime;
-        function startTimer () {
-            'use strict';
-            startTime = new Date();
-        }
-        function endTimer () {
-            'use strict';
-            console.log('経過時間 : ' + (new Date() - startTime));
         }
     });
 })();
