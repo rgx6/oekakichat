@@ -469,16 +469,6 @@
         });
 
         /**
-         * 下描きボタンをクリック
-         */
-        $('#rough').on('click', function () {
-            'use strict';
-            // console.log('#rough click');
-
-            toggleRoughMode();
-        });
-
-        /**
          * 太さ変更
          */
         $("#brushSizeSlider").slider({
@@ -1055,11 +1045,9 @@
 
             isRoughMode = !isRoughMode;
             if (isRoughMode) {
-                $('#rough').addClass('active');
                 updateRoughIndicator();
                 $('#roughIndicator').css('display', 'block');
             } else {
-                $('#rough').removeClass('active');
                 $('#roughIndicator').css('display', 'none');
             }
         }
