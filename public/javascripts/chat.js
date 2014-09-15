@@ -96,6 +96,9 @@
         // 下描きモード制御用
         var isRoughMode = false;
 
+        // チャット使用可否
+        var isTextChatAvailable = false;
+
         // チャットウィンドウ表示制御用
         var isChatVisible = false;
 
@@ -202,16 +205,22 @@
                     var dataSize = (new Blob([JSON.stringify(res.imageLog)], { type: 'application/json' })).size;
                     console.log('データサイズ : ' + dataSize);
 
-                    res.messages.reverse().forEach(function (message) {
-                        appendChatMessage(message);
-                    });
-                    if (res.messages.length === 0) {
-                        $('#chatLog').addClass('disabled');
+                    isTextChatAvailable = res.isTextChatAvailable;
+                    if (!isTextChatAvailable) {
+                        $('#chatButton').remove();
+                        $('#chatWindow').remove();
                     } else {
-                        canGetMessage = true;
-                    }
+                        res.messages.reverse().forEach(function (message) {
+                            appendChatMessage(message);
+                        });
+                        if (res.messages.length === 0) {
+                            $('#chatLog').addClass('disabled');
+                        } else {
+                            canGetMessage = true;
+                        }
 
-                    // todo : chatを末尾にスクロール
+                        // todo : chatを末尾にスクロール
+                    }
 
                     // todo : canvasの描画が終わる前にこの処理が実行されている？
                     isDisabled = false;
@@ -863,7 +872,7 @@
                 toggleRoughMode();
             } else if (e.keyCode === 77) {
                 // M
-                toggleChatWindow();
+                if (isTextChatAvailable) toggleChatWindow();
             }
         });
         $(window).on('wheel', function (e) {

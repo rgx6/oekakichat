@@ -32,69 +32,58 @@ block body
                     div.form-group
                         label.col-xs-2.control-label(for="roomName") 名前
                         div.col-xs-7
-                            input#roomName.form-control(type="text", maxlength="#{nameLengthMax}",
-                                placeholder="#{nameLengthMax}文字以内")
+                            input#roomName.form-control(type="text", maxlength="#{nameLengthMax}")
+                        p.help-block #{nameLengthMax}文字以内
                     div.form-group
                         label.col-xs-2.control-label(for="roomWidth") キャンバスの幅
                         div.col-xs-2
-                            input#roomWidth.form-control(type="number", min="#{widthMin}", max="#{widthMax}",
-                                placeholder="#{widthMin}～#{widthMax}ピクセル  実際のサイズは枠線で +2 されます。")
+                            input#roomWidth.form-control(type="number", min="#{widthMin}", max="#{widthMax}")
+                        p.help-block #{widthMin}～#{widthMax}ピクセル  実際のサイズは枠線で +2 されます。
                     div.form-group
                         label.col-xs-2.control-label(for="roomHeight") キャンバスの高さ
                         div.col-xs-2
-                            input#roomHeight.form-control(type="number", min="#{heightMin}", max="#{heightMax}",
-                                placeholder="#{heightMin}～#{heightMax}ピクセル  実際のサイズは枠線とツールバーで +30 されます。")
+                            input#roomHeight.form-control(type="number", min="#{heightMin}", max="#{heightMax}")
+                        p.help-block #{heightMin}～#{heightMax}ピクセル  実際のサイズは枠線とツールバーで +30 されます。
                     div.form-group
-                        label.col-xs-2.control-label(for="roomIsLogOpen") ログを公開する
-                        div.col-xs-8
-                            label.checkbox
-                                input#roomIsLogOpen(type="checkbox")
-                                チェックをつけると部屋のURLを知らない人にもログを公開します(実装予定)
-                            br
-                            br
+                        div.col-xs-offset-2.col-xs-10
                             button#createRoom.btn.btn-primary(type="button") 部屋を作る
 
-        div#outputpart.row(style='display: none;')
+        div#outputpart.row(style="display: none;")
             div.col-xs-12
-                a(name="output")
                 h2 あなたの部屋
                 h3 URL
-                p 直接開く場合はこちらのURLにアクセスしてください。
                 div.col-xs-12
                     div.input-group
-                        input#url.form-control.col-xs-12(type='text', readonly='readonly')
+                        input#url.form-control.col-xs-12(type="text", readonly="readonly")
                         span.input-group-btn
-                            button#urlSelect.btn.btn-default(type="button") 選択
                             button#urlOpen.btn.btn-default(type="button") 開く
                 br
                 br
                 h3 設定変更用URL
                 p
-                    このURLでは部屋の名前やサイズなどを変更できます（実装中）。
-                    br
-                    span(style='color: red;')パスワードのかわりなので、他の人に知られないようにしてください。
+                    span(style="color: red;")他の人に知られないようにしてください。
                 div.col-xs-12
                     div.input-group
-                        input#configUrl.form-control.col-xs-12(type='text', readonly='readonly')
+                        input#configUrl.form-control.col-xs-12(type="text", readonly="readonly")
                         span.input-group-btn
-                            button#configUrlSelect.btn.btn-default(type="button") 選択
                             button#configUrlOpen.btn.btn-default(type="button") 開く
                 br
                 br
                 h3 埋め込み用タグ
-                p
-                    掲示板などに埋め込む際はこちらのタグを使用してください。
                 div.col-xs-12
                     div.input-group
-                        input#tag.form-control.col-xs-12(type='text', readonly='readonly')
+                        input#tag.form-control.col-xs-12(type="text", readonly="readonly")
                         span.input-group-btn
                             button#tagSelect.btn.btn-default(type="button") 選択
-
-        div.row
-            div.col-xs-12
-                a(name="help")
-                h2 使い方
-                準備中……
+                br
+                br
+                h3 マイページ
+                p URLと設定変更用URLはこのページに登録されています。
+                div.col-xs-12
+                    div.input-group
+                        input#myPageUrl.form-control.col-xs-12(type="text", readonly="readonly")
+                        span.input-group-btn
+                            button#myPageUrlOpen.btn.btn-default(type="button") 開く
 
         div.row
             div.col-xs-12

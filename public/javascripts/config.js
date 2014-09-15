@@ -59,6 +59,7 @@
                     $('#roomWidth').val(res.width);
                     $('#roomHeight').val(res.height);
                     $('#roomIsChatAvailable').prop('checked', res.isChatAvailable);
+                    $('#roomIsTextChatAvailable').prop('checked', res.isTextChatAvailable);
                     $('#roomIsLogAvailable').prop('checked', res.isLogAvailable);
                     $('#roomIsLogOpen').prop('checked', res.isLogOpen);
 
@@ -97,33 +98,36 @@
             $('#updateConfig').attr('disabled', 'disabled');
 
             // 入力値チェック
-            var name            = $('#roomName').val();
-            var width           = Math.floor($('#roomWidth').val());
-            var height          = Math.floor($('#roomHeight').val());
-            var isChatAvailable = $('#roomIsChatAvailable').prop('checked');
-            var isLogAvailable  = $('#roomIsLogAvailable').prop('checked');
-            var isLogOpen       = $('#roomIsLogOpen').prop('checked');
+            var name                = $('#roomName').val();
+            var width               = Math.floor($('#roomWidth').val());
+            var height              = Math.floor($('#roomHeight').val());
+            var isChatAvailable     = $('#roomIsChatAvailable').prop('checked');
+            var isTextChatAvailable = $('#roomIsTextChatAvailable').prop('checked');
+            var isLogAvailable      = $('#roomIsLogAvailable').prop('checked');
+            var isLogOpen           = $('#roomIsLogOpen').prop('checked');
 
             if (!checkParamLength(name, 0, NAME_LENGTH_LIMIT)   ||
                 !checkParamSize(width, WIDTH_MIN, WIDTH_MAX)    ||
                 !checkParamSize(height, HEIGHT_MIN, HEIGHT_MAX) ||
-                typeof isChatAvailable !== TYPE_BOOLEAN         ||
-                typeof isLogAvailable  !== TYPE_BOOLEAN         ||
-                typeof isLogOpen       !== TYPE_BOOLEAN) {
+                typeof isChatAvailable     !== TYPE_BOOLEAN     ||
+                typeof isTextChatAvailable !== TYPE_BOOLEAN     ||
+                typeof isLogAvailable      !== TYPE_BOOLEAN     ||
+                typeof isLogOpen           !== TYPE_BOOLEAN) {
                 alert('入力値が不正です');
                 $('#updateConfig').removeAttr('disabled');
                 return;
             }
 
             var data = {
-                roomId:          roomId,
-                configId:        configId,
-                name:            name,
-                width:           width,
-                height:          height,
-                isChatAvailable: isChatAvailable,
-                isLogAvailable:  isLogAvailable,
-                isLogOpen:       isLogOpen,
+                roomId:              roomId,
+                configId:            configId,
+                name:                name,
+                width:               width,
+                height:              height,
+                isChatAvailable:     isChatAvailable,
+                isTextChatAvailable: isTextChatAvailable,
+                isLogAvailable:      isLogAvailable,
+                isLogOpen:           isLogOpen,
             };
 
             socket.emit('update config', data, function (res) {

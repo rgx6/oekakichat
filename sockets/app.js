@@ -43,16 +43,17 @@ db.Room.update({
     roomId: '00000000000000000000000000000000'
 }, {
     $setOnInsert: {
-        roomId:          '00000000000000000000000000000000',
-        configId:        null,
-        name:            'サンプル',
-        width:           WIDTH_MIN,
-        height:          HEIGHT_MIN,
-        isChatAvailable: true,
-        isLogAvailable:  true,
-        isLogOpen:       false,
-        registeredTime:  new Date(),
-        updatedTime:     new Date(),
+        roomId:              '00000000000000000000000000000000',
+        configId:            uuid.v4().replace(/-/g, ''),
+        name:                'サンプル',
+        width:               WIDTH_MIN,
+        height:              HEIGHT_MIN,
+        isChatAvailable:     true,
+        isTextChatAvailable: true,
+        isLogAvailable:      true,
+        isLogOpen:           false,
+        registeredTime:      new Date(),
+        updatedTime:         new Date(),
     }
 }, { upsert: true },
 function (err, numberAffected) {
@@ -79,8 +80,7 @@ exports.onConnection = function (client) {
         if (isUndefinedOrNull(data)           ||
             isUndefinedOrNull(data.name)      ||
             isUndefinedOrNull(data.width)     || isNaN(data.width)  ||
-            isUndefinedOrNull(data.height)    || isNaN(data.height) ||
-            isUndefinedOrNull(data.isLogOpen) || typeof data.isLogOpen !== TYPE_BOOLEAN) {
+            isUndefinedOrNull(data.height)    || isNaN(data.height)) {
             logger.warn('create room : ' + client.id + ' : ' + RESULT_BAD_PARAM);
             callback({ result: RESULT_BAD_PARAM });
             return;
@@ -99,16 +99,17 @@ exports.onConnection = function (client) {
         var configId = uuid.v4().replace(/-/g, '');
 
         var room = new db.Room();
-        room.roomId          = roomId;
-        room.configId        = configId;
-        room.name            = name;
-        room.width           = data.width;
-        room.height          = data.height;
-        room.isChatAvailable = true;
-        room.isLogAvailable  = true;
-        room.isLogOpen       = data.isLogOpen;
-        room.registeredTime  = new Date();
-        room.updatedTime     = new Date();
+        room.roomId              = roomId;
+        room.configId            = configId;
+        room.name                = name;
+        room.width               = data.width;
+        room.height              = data.height;
+        room.isChatAvailable     = true;
+        room.isTextChatAvailable = true;
+        room.isLogAvailable      = true;
+        room.isLogOpen           = false;
+        room.registeredTime      = new Date();
+        room.updatedTime         = new Date();
         room.save(function (err, doc) {
             if (err) {
                 logger.error(err);
@@ -171,7 +172,7 @@ exports.onConnection = function (client) {
                     return;
                 }
 
-                rooms[id] = new Room(id, doc.name);
+                rooms[id] = new Room(id, doc.name, doc.isTextChatAvailable);
 
                 var q = db.TemporaryLog
                         .findOne({ roomId: id, isDeleted: false })
@@ -202,7 +203,18 @@ exports.onConnection = function (client) {
                 roomsUserCount += 1;
                 updateUserCount(id);
 
-                // todo : 接続後に改めてclientからrequestさせる
+                if (!room.isTextChatAvailable) {
+                    callback({
+                        result:              RESULT_OK,
+                        roomId:              room.id,
+                        name:                room.name,
+                        isTextChatAvailable: room.isTextChatAvailable,
+                        imageLog:            room.imageLog,
+                    });
+                    return;
+                }
+
+                // todo : 接続後に改めてclientからrequestさせる？
                 // チャットログ
                 var messages = [];
                 var query = db.Chat
@@ -221,11 +233,12 @@ exports.onConnection = function (client) {
                     });
 
                     callback({
-                        result:   RESULT_OK,
-                        roomId:   room.id,
-                        name:     room.name,
-                        imageLog: room.imageLog,
-                        messages: messages,
+                        result:              RESULT_OK,
+                        roomId:              room.id,
+                        name:                room.name,
+                        isTextChatAvailable: room.isTextChatAvailable,
+                        imageLog:            room.imageLog,
+                        messages:            messages,
                     });
                 });
             });
@@ -270,6 +283,8 @@ exports.onConnection = function (client) {
 
         if (isUndefinedOrNull(rooms[id])) return;
 
+        if (!rooms[id].isTextChatAvailable) return;
+
         if (isUndefinedOrNull(data) ||
             !checkParamLength(data.trim(), 1, MESSAGE_LENGTH_MAX)) {
             logger.warn('send message : ' + client.id + ' : ' + RESULT_BAD_PARAM);
@@ -312,6 +327,8 @@ exports.onConnection = function (client) {
         });
 
         if (isUndefinedOrNull(rooms[id])) return;
+
+        if (!rooms[id].isTextChatAvailable) return;
 
         if (isUndefinedOrNull(data) ||
             isNaN(Date.parse(data))) {
@@ -459,14 +476,15 @@ exports.onConnection = function (client) {
             }
 
             callback({
-                result:          RESULT_OK,
-                roomId:          doc.roomId,
-                name:            doc.name,
-                width:           doc.width,
-                height:          doc.height,
-                isChatAvailable: doc.isChatAvailable,
-                isLogAvailable:  doc.isLogAvailable,
-                isLogOpen:       doc.isLogOpen,
+                result:              RESULT_OK,
+                roomId:              doc.roomId,
+                name:                doc.name,
+                width:               doc.width,
+                height:              doc.height,
+                isChatAvailable:     doc.isChatAvailable,
+                isTextChatAvailable: doc.isTextChatAvailable,
+                isLogAvailable:      doc.isLogAvailable,
+                isLogOpen:           doc.isLogOpen,
             });
         });
     });
@@ -484,9 +502,10 @@ exports.onConnection = function (client) {
             isUndefinedOrNull(data.name)      ||
             isUndefinedOrNull(data.width)     || isNaN(data.width)  ||
             isUndefinedOrNull(data.height)    || isNaN(data.height) ||
-            isUndefinedOrNull(data.isChatAvailable) || typeof data.isChatAvailable !== TYPE_BOOLEAN ||
-            isUndefinedOrNull(data.isLogAvailable)  || typeof data.isLogAvailable  !== TYPE_BOOLEAN ||
-            isUndefinedOrNull(data.isLogOpen)       || typeof data.isLogOpen       !== TYPE_BOOLEAN) {
+            isUndefinedOrNull(data.isChatAvailable)     || typeof data.isChatAvailable     !== TYPE_BOOLEAN ||
+            isUndefinedOrNull(data.isTextChatAvailable) || typeof data.isTextChatAvailable !== TYPE_BOOLEAN ||
+            isUndefinedOrNull(data.isLogAvailable)      || typeof data.isLogAvailable      !== TYPE_BOOLEAN ||
+            isUndefinedOrNull(data.isLogOpen)           || typeof data.isLogOpen           !== TYPE_BOOLEAN) {
             logger.warn('update config : ' + client.id + ' : ' + RESULT_BAD_PARAM);
             callback({ result: RESULT_BAD_PARAM });
             return;
@@ -506,13 +525,14 @@ exports.onConnection = function (client) {
             configId: data.configId,
         }, {
             $set: {
-                name:            name,
-                width:           data.width,
-                height:          data.height,
-                isChatAvailable: data.isChatAvailable,
-                isLogAvailable:  data.isLogAvailable,
-                isLogOpen:       data.isLogOpen,
-                updatedTime:     new Date(),
+                name:                name,
+                width:               data.width,
+                height:              data.height,
+                isChatAvailable:     data.isChatAvailable,
+                isTextChatAvailable: data.isTextChatAvailable,
+                isLogAvailable:      data.isLogAvailable,
+                isLogOpen:           data.isLogOpen,
+                updatedTime:         new Date(),
             }
         }, null, function (err, numberAffected) {
             if (err) {
@@ -526,6 +546,9 @@ exports.onConnection = function (client) {
                 callback({ result: RESULT_ROOM_NOT_EXISTS });
                 return;
             }
+
+            // todo : update成功時に設定を部屋に反映させる
+            rooms[data.roomId].isTextChatAvailable = data.isTextChatAvailable;
 
             callback({ result: RESULT_OK });
             return;

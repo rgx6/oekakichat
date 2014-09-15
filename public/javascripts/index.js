@@ -55,25 +55,22 @@
             $('#createRoom').attr('disabled', 'disabled');
 
             // 入力値チェック
-            var name      = $('#roomName').val();
-            var width     = Math.floor($('#roomWidth').val());
-            var height    = Math.floor($('#roomHeight').val());
-            var isLogOpen = $('#roomIsLogOpen').prop('checked');
+            var name   = $('#roomName').val();
+            var width  = Math.floor($('#roomWidth').val());
+            var height = Math.floor($('#roomHeight').val());
 
             if (!checkParamLength(name, 0, NAME_LENGTH_LIMIT)   ||
                 !checkParamSize(width, WIDTH_MIN, WIDTH_MAX)    ||
-                !checkParamSize(height, HEIGHT_MIN, HEIGHT_MAX) ||
-                typeof isLogOpen !== TYPE_BOOLEAN) {
+                !checkParamSize(height, HEIGHT_MIN, HEIGHT_MAX)) {
                 alert('入力値が不正です');
                 $('#createRoom').removeAttr('disabled');
                 return;
             }
 
             var data = {
-                name:      name,
-                width:     width,
-                height:    height,
-                isLogOpen: isLogOpen
+                name:   name,
+                width:  width,
+                height: height,
             };
 
             socket.emit('create room', data, function (res) {
@@ -86,7 +83,6 @@
                     $('#roomName').val('');
                     $('#roomWidth').val('');
                     $('#roomHeight').val('');
-                    $('#roomIsLogOpen').removeAttr('checked');
 
                     var origin = location.href.replace(/#.*/, '');
                     var url = origin + res.roomId + '/';
@@ -96,10 +92,12 @@
                     var tag = '<iframe src="{0}" style="border: none;" width="{1}" height="{2}" />'
                               .format(url, res.width + 2, res.height + 30);
                     $('#tag').val(tag);
+                    var myPageUrl = origin + 'my/';
+                    $('#myPageUrl').val(myPageUrl);
 
                     $('#inputpart').slideUp(500, function () {
                         $('#outputpart').slideDown(500, function () {
-                            window.location.hash = 'output';
+                            $('html, body').animate({ scrollTop: $('#outputpart').offset().top });
                         });
                     });
 
@@ -109,28 +107,6 @@
                 }
                 $('#createRoom').removeAttr('disabled');
             });
-        });
-
-        /**
-         * URL選択
-         */
-        $('#urlSelect').on('click', function (e) {
-            'use strict';
-            // console.log('#urlSelect click');
-            e.stopPropagation();
-
-            $('#url').select();
-        });
-
-        /**
-         * 設定用URL選択
-         */
-        $('#configUrlSelect').on('click', function (e) {
-            'use strict';
-            // console.log('#configUrlSelect click');
-            e.stopPropagation();
-
-            $('#configUrl').select();
         });
 
         /**
@@ -164,6 +140,17 @@
             e.stopPropagation();
 
             window.open($('#configUrl').val());
+        });
+
+        /**
+         * マイページを開く
+         */
+        $('#myPageUrlOpen').on('click', function (e) {
+            'use strict';
+            // console.log('#myPageUrlOpen click');
+            e.stopPropagation();
+
+            window.open($('#myPageUrl').val());
         });
 
         //------------------------------
