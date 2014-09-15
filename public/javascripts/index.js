@@ -21,8 +21,7 @@
         var HEIGHT_MIN        = Number($('#roomHeight').attr('min'));
         var HEIGHT_MAX        = Number($('#roomHeight').attr('max'));
 
-        // todo : debug
-        $('#roomName').val('test');
+        $('#roomName').val('お絵かきチャット');
         $('#roomWidth').val(600);
         $('#roomHeight').val(300);
 
