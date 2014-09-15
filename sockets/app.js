@@ -15,6 +15,7 @@ var RESULT_SYSTEM_ERROR       = 'system error';
 var RESULT_ROOM_NOT_EXISTS    = 'room not exists';
 var RESULT_ROOM_NOT_AVAILABLE = 'room not available';
 var RESULT_ROOM_INITIALIZING  = 'room initializing';
+var RESULT_ROOM_IS_ACTIVE     = 'room is active';
 
 var KEY_ID = 'id';
 
@@ -634,6 +635,40 @@ exports.onConnection = function (client) {
             });
         }, Promise.resolve()).then(function () {
             callback(result);
+        });
+    });
+
+    /**
+     * 管理ページ 部屋を閉じる
+     */
+    client.on('admin close room', function (roomId, callback) {
+        'use strict';
+        // logger.info('admin close room : ' + client.id);
+
+        if (adminClientId !== client.id) {
+            client.disconnect();
+            return;
+        }
+
+        if (isUndefinedOrNull(rooms[roomId])) {
+            callback({ result: RESULT_ROOM_NOT_EXISTS });
+            return;
+        }
+
+        if (rooms[roomId].userCount > 0) {
+            callback({ result: RESULT_ROOM_IS_ACTIVE });
+            return;
+        }
+
+        var result = [];
+        saveTemporaryLog(roomId, result).then(function () {
+            if (result.length > 0 &&
+                (result[0].indexOf('saved') != -1 || result[0].indexOf('no data') != -1)) {
+                delete rooms[roomId];
+                callback({ result: RESULT_OK });
+            } else {
+                callback({ result: RESULT_SYSTEM_ERROR });
+            }
         });
     });
 };
