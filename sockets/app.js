@@ -548,8 +548,10 @@ exports.onConnection = function (client) {
                 return;
             }
 
-            // todo : update成功時に設定を部屋に反映させる
-            rooms[data.roomId].isTextChatAvailable = data.isTextChatAvailable;
+            if (!isUndefinedOrNull(rooms[data.roomId])) {
+                // todo : update成功時に設定を部屋に反映させる
+                rooms[data.roomId].isTextChatAvailable = data.isTextChatAvailable;
+            }
 
             callback({ result: RESULT_OK });
             return;
