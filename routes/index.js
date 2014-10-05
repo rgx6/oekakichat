@@ -39,7 +39,20 @@ var RESULT_LOG_NOT_AVAILABLE = 'log not available';
 // routing
 //------------------------------
 
-exports.index = function (req, res) {
+exports.set = function (appRoot, app) {
+    app.get(appRoot, index);
+    app.get(appRoot + 'my/', my);
+    app.get(appRoot + 'admin/', admin);
+    app.get(appRoot + 'help/', help);
+    app.get(appRoot + 'config/:configId/', config);
+    app.get(appRoot + ':id/', room);
+    app.get(appRoot + ':id/log', log);
+    app.get(appRoot + ':id/log/:page', log);
+    app.get(appRoot + 'api/log/:id/:page', apiLog);
+
+};
+
+var index = function (req, res) {
     'use strict';
 
     res.render('index', {
@@ -52,7 +65,7 @@ exports.index = function (req, res) {
     });
 };
 
-exports.room = function (req, res) {
+var room = function (req, res) {
     'use strict';
 
     var id = req.params.id;
@@ -104,7 +117,7 @@ exports.room = function (req, res) {
     });
 };
 
-exports.log = function (req, res) {
+var log = function (req, res) {
     'use strict';
 
     res.render('log', {
@@ -115,7 +128,7 @@ exports.log = function (req, res) {
 /**
  * 部屋設定変更
  */
-exports.config = function (req, res) {
+var config = function (req, res) {
     res.render('config', {
         title:         '設定 - ' + APP_TITLE,
         configId:      req.params.configId,
@@ -130,27 +143,27 @@ exports.config = function (req, res) {
 /**
  * アドレス帳ページ
  */
-exports.my = function (req, res) {
+var my = function (req, res) {
     res.render('my', { title: 'アドレス帳 - ' + APP_TITLE });
 };
 
 /**
  * 管理者用ページ
  */
-exports.admin = function (req, res) {
+var admin = function (req, res) {
     res.render('admin', { title: '管理ページ - ' + APP_TITLE });
 };
 
 /**
  * ヘルプ
  */
-exports.help = function (req, res) {
+var help = function (req, res) {
     'use strict';
 
     res.render('help', { title: APP_TITLE });
 };
 
-exports.apiLog = function (req, res) {
+var apiLog = function (req, res) {
     'use strict';
 
     var id = req.params.id;

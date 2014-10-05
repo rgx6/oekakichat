@@ -52,15 +52,7 @@ app.use(function (req, res) {
 
 // routing
 var appRoot = '/';
-app.get(appRoot, routes.index);
-app.get(appRoot + 'my/', routes.my);
-app.get(appRoot + 'admin/', routes.admin);
-app.get(appRoot + 'help/', routes.help);
-app.get(appRoot + 'config/:configId/', routes.config);
-app.get(appRoot + ':id/', routes.room);
-app.get(appRoot + ':id/log', routes.log);
-app.get(appRoot + ':id/log/:page', routes.log);
-app.get(appRoot + 'api/log/:id/:page', routes.apiLog);
+routes.set(appRoot, app);
 
 var server = http.createServer(app);
 server.listen(app.get('port'), function () {
