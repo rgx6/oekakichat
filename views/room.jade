@@ -42,7 +42,7 @@ block body
                 label#userCount.userCount
                 label#globalUserCount.userCount
             div.clear
-        div#canvasArea.canvas
+        div#canvasArea.canvas(style="width: #{width}px; height: #{height}px;")
             canvas#combinationCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#roughCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#mainCanvas.mainCanvas(width="#{width}px", height="#{height}px")

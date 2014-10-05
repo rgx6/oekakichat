@@ -1,17 +1,10 @@
 /**
-* 全体の外枠
-*/
-.outline {
-  border: solid;
-  border-width: 1px;
-  border-color: #bdc3c7;
-  background-color: #fff;
-}
-
-/**
 * ツールバー
 */
 .toolbar {
+  border: solid;
+  border-width: 1px 0px 0px 1px;
+  border-color: #bdc3c7;
   background-color: #bdc3c7;
   position: fixed;
   z-index: 50;
@@ -189,10 +182,18 @@ body {
 /**
 * canvas
 */
-.mainCanvas {
+
+.canvas {
   position: absolute;
   top: 29px;
-  left: 1px;
+  border: solid;
+  border-width: 0px 1px 1px 1px;
+  border-color: #bdc3c7;
+  background-color: #fff;
+}
+
+.mainCanvas {
+  position: absolute;
 }
 
 table input, table td {
