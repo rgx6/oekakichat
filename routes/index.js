@@ -210,6 +210,7 @@ var apiLog = function (req, res) {
             if (count === 0) {
                 res.status(200).json({
                     result: RESULT_OK,
+                    name:   roomDoc.name,
                     files:  [],
                 });
                 return;

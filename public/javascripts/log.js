@@ -27,7 +27,7 @@
             'use strict';
             // console.log('getRoomIdFromUrl');
 
-            if (location.pathname.match(/^\/(\d+)\/log/)) {
+            if (location.pathname.match(/^\/([0-9a-zA-Z]+)\/log/)) {
                 return RegExp.$1;
             } else {
                 return null;
@@ -38,9 +38,9 @@
             'use strict';
             // console.log('getPageFromUrl');
 
-            if (location.pathname.match(/^\/(\d+)\/log\/?$/)) {
+            if (location.pathname.match(/^\/[0-9a-zA-Z]+\/log\/?$/)) {
                 return 1;
-            } else if (location.pathname.match(/^\/\d+\/log\/(\d+)\/?$/)) {
+            } else if (location.pathname.match(/^\/[0-9a-zA-Z]+\/log\/(\d+)\/?$/)) {
                 return RegExp.$1;
             } else {
                 return null;
