@@ -1,6 +1,6 @@
-var log4js = require('log4js');
-var logger = log4js.getLogger('OekakiChat');
-var db = require('../sockets/db.js');
+var log4js  = require('log4js');
+var logger  = log4js.getLogger('OekakiChat');
+var db      = require('../sockets/db.js');
 var chatapp = require('../sockets/app.js');
 
 //------------------------------
@@ -27,6 +27,13 @@ var msgInvalidUrl       = '(´・ω・｀)不正なURL';
 var msgRoomNotExists    = '(´・ω・｀)存在しない部屋';
 var msgChatNotAvailable = '(´・ω・｀)お絵かきチャット停止中';
 var msgLogNotAvailable  = '(´・ω・｀)ログ閲覧停止中';
+
+// エラーコード
+var RESULT_OK                = 'ok';
+var RESULT_BAD_PARAM         = 'bad param';
+var RESULT_SYSTEM_ERROR      = 'system error';
+var RESULT_ROOM_NOT_EXISTS   = 'room not exists';
+var RESULT_LOG_NOT_AVAILABLE = 'log not available';
 
 //------------------------------
 // routing
@@ -100,81 +107,8 @@ exports.room = function (req, res) {
 exports.log = function (req, res) {
     'use strict';
 
-    var id = req.params.id;
-    var page = req.params.page;
-
-    if (isUndefinedOrNull(id)   || id.length !== 32 ||
-        isUndefinedOrNull(page) || !page.match(/^[1-9][0-9]*$/)) {
-        res.status(400).render('error', {
-            title:   APP_TITLE,
-            message: msgInvalidUrl,
-        });
-        return;
-    }
-
-    var query = db.Room.findOne({ roomId: id });
-    query.exec(function (err, roomDoc) {
-        if (err) {
-            logger.error(err);
-            res.status(500).render('error', {
-                title:   APP_TITLE,
-                message: msgSystemError,
-            });
-            return;
-        }
-
-        if (!roomDoc) {
-            logger.warn('room not exists : ' + id);
-            res.status(404).render('error', {
-                title:   APP_TITLE,
-                message: msgRoomNotExists,
-            });
-            return;
-        }
-
-        if (!roomDoc.isLogAvailable) {
-            logger.warn('log not available : ' + id);
-            res.status(403).render('error', {
-                title:   APP_TITLE,
-                message: msgLogNotAvailable,
-            });
-        }
-
-        var query = db.Log.find({ roomId: id, isDeleted: false }).sort({ fileName: 'desc' });
-        query.exec(function (err, logDocs) {
-            if (err) {
-                logger.error(err);
-                res.status(500).render('error', {
-                    title:   APP_TITLE,
-                    message: msgSystemError,
-                });
-                return;
-            }
-
-            var totalPageCount = Math.ceil(logDocs.length / ITEMS_PER_LOG_PAGE);
-            if (page < 1 || totalPageCount < page) {
-                res.status(400).render('error', {
-                    title:   APP_TITLE,
-                    message: msgInvalidUrl,
-                });
-                return;
-            }
-
-            var fileList = logDocs.map(function (x) { return x.fileName; });
-
-            // ページング処理
-            var startIndex = ITEMS_PER_LOG_PAGE * (page - 1);
-            var endIndex = page == totalPageCount ? fileList.length : ITEMS_PER_LOG_PAGE * page;
-            var dispFileList = fileList.slice(startIndex, endIndex);
-
-            res.render('log', {
-                title:          roomDoc.name + ' - ' + APP_TITLE,
-                name:           roomDoc.name,
-                files:          dispFileList,
-                page:           page,
-                totalPageCount: totalPageCount,
-            });
-        });
+    res.render('log', {
+        title: APP_TITLE
     });
 };
 
@@ -214,6 +148,83 @@ exports.help = function (req, res) {
     'use strict';
 
     res.render('help', { title: APP_TITLE });
+};
+
+exports.apiLog = function (req, res) {
+    'use strict';
+
+    var id = req.params.id;
+    var page = req.params.page;
+
+    if (isUndefinedOrNull(id) || id.length !== 32) {
+        res.status(400).json({ result: RESULT_BAD_PARAM });
+        return;
+    }
+
+    if (isUndefinedOrNull(page) || !page.match(/^[1-9][0-9]*$/)) {
+        res.status(400).json({ result: RESULT_BAD_PARAM });
+        return;
+    }
+
+    var query = db.Room.findOne({ roomId: id });
+    query.exec(function (err, roomDoc) {
+        if (err) {
+            logger.error(err);
+            res.status(500).json({ result: RESULT_SYSTEM_ERROR });
+            return;
+        }
+
+        if (!roomDoc) {
+            logger.warn('room not exists : ' + id);
+            res.status(400).json({ result: RESULT_ROOM_NOT_EXISTS });
+            return;
+        }
+
+        if (!roomDoc.isLogAvailable) {
+            logger.warn('log not available : ' + id);
+            res.status(400).json({ result: RESULT_LOG_NOT_AVAILABLE });
+            return;
+        }
+
+        var query = db.Log.count({ roomId: id, isDeleted: false });
+        query.exec(function (err, count) {
+            if (err) {
+                logger.error(err);
+                res.status(500).json({ result: RESULT_SYSTEM_ERROR });
+                return;
+            }
+
+            if (count === 0) {
+                res.status(200).json({
+                    result: RESULT_OK,
+                    files:  [],
+                });
+                return;
+            }
+
+            var query = db.Log
+                    .find({ roomId: id, isDeleted: false })
+                    .select({ fileName: 1, registeredTime: 1, _id: 0 })
+                    .limit(ITEMS_PER_LOG_PAGE)
+                    .skip((page - 1) * ITEMS_PER_LOG_PAGE)
+                    .sort({ fileName: 'desc' });
+            query.exec(function (err, logDocs) {
+                if (err) {
+                    logger.error(err);
+                    res.status(500).json({ result: RESULT_SYSTEM_ERROR });
+                    return;
+                }
+
+                res.status(200).json({
+                    result:       RESULT_OK,
+                    name:         roomDoc.name,
+                    files:        logDocs,
+                    items:        count,
+                    itemsPerPage: ITEMS_PER_LOG_PAGE,
+                });
+            });
+        });
+    });
 };
 
 //------------------------------

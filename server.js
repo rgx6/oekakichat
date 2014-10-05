@@ -58,7 +58,9 @@ app.get(appRoot + 'admin/', routes.admin);
 app.get(appRoot + 'help/', routes.help);
 app.get(appRoot + 'config/:configId/', routes.config);
 app.get(appRoot + ':id/', routes.room);
-app.get(appRoot + ':id/log/:page/', routes.log);
+app.get(appRoot + ':id/log', routes.log);
+app.get(appRoot + ':id/log/:page', routes.log);
+app.get(appRoot + 'api/log/:id/:page', routes.apiLog);
 
 var server = http.createServer(app);
 server.listen(app.get('port'), function () {

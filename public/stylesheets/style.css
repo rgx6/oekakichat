@@ -316,28 +316,15 @@ table input, table td {
 /**
 * ログ
 */
-.logPage {
-  margin: 20px;
-  text-align: center;
-}
-
-.logPage a {
-  margin-right: 30px;
-}
-
-.inactive {
-  color: #999999;
-}
 
 .thumbnail {
-  float: left;
   margin: 10px;
 }
 
 .thumbnail img {
   border: solid;
   border-width: 1px;
-  border-color: #999999;
+  border-color: #ddd;
 }
 
 /**
