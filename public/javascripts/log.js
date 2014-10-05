@@ -81,7 +81,7 @@
                         + '<img src="/log/thumb/' + file.fileName + '.thumb.png"'
                         + 'alt="ファイルがないよ(´・ω・｀)" />'
                         + '<div class="caption text-center">'
-                        + new Date(file.registeredTime).toLocaleFormat().replace(' ', '<br />')
+                        + formatDateTime(file.registeredTime)
                         + '</div>');
             });
         }
@@ -104,6 +104,21 @@
                     return false;
                 },
             });
+        }
+
+        function formatDateTime (dateTime) {
+            'use strict';
+            // console.log('formatDateTime');
+
+            var date = new Date(dateTime);
+
+            return date.getFullYear() + '/'
+                + ('0' + (date.getMonth() + 1)).slice(-2) + '/'
+                + ('0' + date.getDate()).slice(-2)
+                + '<br />'
+                + date.getHours() + ':'
+                + ('0' + date.getMinutes()).slice(-2) + ':'
+                + ('0' + date.getSeconds()).slice(-2);
         }
     });
 })();
