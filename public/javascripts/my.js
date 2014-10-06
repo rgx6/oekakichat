@@ -19,6 +19,34 @@
             row.fadeOut('slow', function () { row.remove(); });
         });
 
+        $('#export').on('click', function () {
+            'use strict';
+            // console.log('#export click');
+
+            var data = myAddressBook.export();
+
+            var blob = new Blob([data], { 'type': 'text/plain;charset=UTF-8', 'encoding': 'UTF-8' });
+            var url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank', '');
+        });
+
+        $('#import').on('click', function () {
+            'use strict';
+            // console.log('#import click');
+
+            var data = window.prompt('エクスポートしたデータを貼り付けてください');
+            if (!data || data.trim().length === 0) return;
+            try {
+                JSON.parse(data);
+            } catch (e) {
+                alert('データが破損しています');
+                return;
+            }
+
+            myAddressBook.import(data);
+            alert('データをインポートしました\nページを更新してください');
+        });
+
         $(window).on('storage', function () {
             'use strict';
             // console.log('storage event');

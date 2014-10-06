@@ -50,5 +50,17 @@ var AddressBook = (function () {
         this.save();
     };
 
+    AddressBook.prototype.export = function () {
+        'use strict';
+
+        return localStorage.AddressBook ? localStorage.AddressBook : null;
+    };
+
+    AddressBook.prototype.import = function (data) {
+        'use strict';
+
+        localStorage.AddressBook = data;
+    };
+
     return AddressBook;
 })();

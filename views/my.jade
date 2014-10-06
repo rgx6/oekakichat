@@ -10,7 +10,10 @@ block body
     div.container(style="max-width: none; important; width: 970px;")
         div.row
             div.col-xs-12
-                h2 アドレス帳
+                div.clearfix
+                    h2.pull-left アドレス帳
+                    button#import.btn.btn-default.pull-right(type="button") インポート
+                    button#export.btn.btn-default.pull-right(type="button") エクスポート
                 p#message.bg-danger
                 table#roomList.table.table-striped.table-hover
                     tbody
