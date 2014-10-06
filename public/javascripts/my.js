@@ -64,7 +64,7 @@
                 if (room.roomId === '00000000000000000000000000000000' && !room.configId) return;
 
                 html += '<tr>';
-                html += '<td>' + room.name + '</td>';
+                html += '<td>' + escapeHTML(room.name) + '</td>';
                 html += '<td><a href="/' + room.roomId + '/" target="_blank">'
                     + '<button class="btn btn-primary">部屋</button></a></td>';
                 if (room.configId) {
@@ -77,6 +77,10 @@
                 html += '</tr>';
             });
             $('#roomList tbody').append(html);
+        }
+
+        function escapeHTML (val) {
+            return $('<div />').text(val).html();
         }
     });
 })();
