@@ -88,7 +88,7 @@
                     $('#url').val(url);
                     var configUrl = origin + 'config/' + res.configId + '/';
                     $('#configUrl').val(configUrl);
-                    var tag = '<iframe src="{0}" style="border: none;" width="{1}" height="{2}" />'
+                    var tag = '<iframe src="{0}" style="border: none;" width="{1}" height="{2}"></iframe>'
                               .format(url, res.width + 2, res.height + 30);
                     $('#tag').val(tag);
                     var myPageUrl = origin + 'my/';
