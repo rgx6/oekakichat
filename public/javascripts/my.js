@@ -23,7 +23,7 @@
             'use strict';
             // console.log('#export click');
 
-            var data = myAddressBook.export();
+            var data = encodeURI(myAddressBook.export());
 
             var blob = new Blob([data], { 'type': 'text/plain;charset=UTF-8', 'encoding': 'UTF-8' });
             var url = window.URL.createObjectURL(blob);
@@ -36,6 +36,7 @@
 
             var data = window.prompt('エクスポートしたデータを貼り付けてください');
             if (!data || data.trim().length === 0) return;
+            data = decodeURI(data);
             try {
                 JSON.parse(data);
             } catch (e) {
