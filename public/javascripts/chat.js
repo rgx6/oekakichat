@@ -15,7 +15,7 @@
         var BRUSH_SIZE_MIN = 1;
         var BRUSH_SIZE_MAX = 21;
 
-        var MINI_VIEW_SIZE_MAX = 300;
+        var MINI_VIEW_SIZE_MAX = 200;
         var MINI_VIEW_DRAW_INTERVAL = 5000;
 
         // globalCompositeOperation
@@ -1535,8 +1535,8 @@
                 toggleMiniViewWindow();
 
                 var left = $(window).width() < $('.outline').width()
-                        ? $(window).scrollLeft() + $(window).width() - 332
-                        : $(window).scrollLeft() + $('.outline').width() - 332;
+                        ? $(window).scrollLeft() + $(window).width() - MINI_VIEW_SIZE_MAX - 32
+                        : $(window).scrollLeft() + $('.outline').width() - MINI_VIEW_SIZE_MAX - 32;
                 var top = $(window).scrollTop() + 59;
                 $('#miniViewWindow').offset({ top: top, left: left });
             }
@@ -1550,9 +1550,9 @@
             // console.log('initMiniViewScale');
 
             if (CANVAS_WIDTH < CANVAS_HEIGHT) {
-                miniViewScale = 300 / CANVAS_HEIGHT;
+                miniViewScale = MINI_VIEW_SIZE_MAX / CANVAS_HEIGHT;
             } else {
-                miniViewScale = 300 / CANVAS_WIDTH;
+                miniViewScale = MINI_VIEW_SIZE_MAX / CANVAS_WIDTH;
             }
             miniViewContext.scale(miniViewScale, miniViewScale);
         }
