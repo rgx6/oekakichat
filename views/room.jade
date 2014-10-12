@@ -13,7 +13,7 @@ block link
     link(type="text/css", rel="stylesheet", href="/stylesheets/colorbox.css")
     link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
 block body
-    div.outline(style="width: #{width}px; height: #{height+28}px;")
+    div.outline(style="width: #{width+2}px; height: #{height+30}px;")
         div#toolbar.toolbar(style="width: #{width}px; height: 28px;")
             div.drawTool
                 label#brush.toggle.active(title="ブラシ") 筆
@@ -47,6 +47,10 @@ block body
             canvas#roughCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#mainCanvas.mainCanvas(width="#{width}px", height="#{height}px")
             canvas#cursorCanvas.mainCanvas(width="#{width}px", height="#{height}px")
+        div#miniViewWindow.miniViewWindow.displayNone
+            div#miniViewHandle.miniViewHandle
+            canvas#miniView.miniView
+            canvas#miniViewCursor.miniViewCursor
         div#chatWindow.chatWindow.displayNone
             div.chatHeader
                 div#dragHandle.dragHandle

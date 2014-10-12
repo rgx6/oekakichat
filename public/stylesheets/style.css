@@ -3,7 +3,7 @@
 */
 .toolbar {
   border: solid;
-  border-width: 1px 0px 0px 1px;
+  border-width: 1px 1px 0px 1px;
   border-color: #bdc3c7;
   background-color: #bdc3c7;
   position: fixed;
@@ -311,6 +311,32 @@ table input, table td {
 
 .chatFooter label.disabled {
   background-color: #eee;
+}
+
+/**
+* MiniView
+*/
+
+.miniViewWindow {
+  position: fixed;
+  top: 59px;
+  left: 30px;
+  border: solid;
+  border-width: 1px;
+  background-color: #fff;
+}
+
+.miniViewHandle {
+  background-color: #bdc3c7;
+  height: 20px;
+  border: solid;
+  border-width: 0px 0px 1px 0px;
+}
+
+.miniView, .miniViewCursor {
+  position: absolute;
+  top: 21px;
+  left: 0px;
 }
 
 /**

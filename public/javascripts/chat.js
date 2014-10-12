@@ -15,6 +15,9 @@
         var BRUSH_SIZE_MIN = 1;
         var BRUSH_SIZE_MAX = 21;
 
+        var MINI_VIEW_SIZE_MAX = 300;
+        var MINI_VIEW_DRAW_INTERVAL = 5000;
+
         // globalCompositeOperation
         var SOURCE_OVER = 'source-over';
         var DESTINATION_OVER = 'destination-over';
@@ -60,18 +63,26 @@
         var drawWidthEraser = drawWidth;
         // 描画中フラグ
         var drawFlag = false;
+        // MiniViewのmousedownフラグ
+        var miniViewFlag = false;
+        // MiniViewの描画Scale
+        var miniViewScale;
         // canvasオブジェクト
         var combinationCanvas = $('#combinationCanvas').get(0);
         var roughCanvas = $('#roughCanvas').get(0);
         var mainCanvas = $('#mainCanvas').get(0);
         var cursorCanvas = $('#cursorCanvas').get(0);
         var brushCanvas = $('#brushSizeCanvas').get(0);
+        var miniViewCanvas = $('#miniView').get(0);
+        var miniViewCursorCanvas = $('#miniViewCursor').get(0);
         // contextオブジェクト
         var combinationContext;
         var roughContext;
         var mainContext;
         var cursorContext;
         var brushContext;
+        var miniViewContext;
+        var miniViewCursorContext;
         // お絵かきデータのbuffer
         var buffer = [];
         // お絵かきデータ送信用のタイマーがセットされているか
@@ -113,6 +124,13 @@
         // ホイール操作用ショートカットキー
         var key_width_pressed = false;
 
+        // window resizeイベントの制御用
+        var windowResizeTimer;
+        // MiniView表示制御用
+        var isMiniViewVisible = false;
+        // MiniView再描画制御用
+        var miniViewDrawTimer;
+
         //------------------------------
         // 準備
         //------------------------------
@@ -139,6 +157,11 @@
         brushContext.lineJoin = 'round';
 
         drawBrushSize();
+
+        miniViewContext = miniViewCanvas.getContext('2d');
+        miniViewCursorContext = miniViewCursorCanvas.getContext('2d');
+        initMiniViewSize();
+        initMiniViewScale();
 
         // パレット選択色初期化
         changePalletSelectedBorderColor();
@@ -168,6 +191,16 @@
                 $('#dragHandle').css('width', width - 78 + 'px');
                 $('#message').css('width', width - 60 + 'px');
             }
+        });
+
+        // MiniViewウィンドウの初期化
+        $('#miniViewWindow').draggable({
+            handle: '#miniViewHandle',
+            containment: 'parent',
+            cursor: 'move',
+            scroll: false,
+            start: function (event, ui) { isMousemoveDisabled = true; },
+            stop: function (event, ui) { isMousemoveDisabled = false; },
         });
 
         socket = io.connect('/', { 'reconnect': false });
@@ -222,6 +255,9 @@
                         // todo : chatを末尾にスクロール
                     }
 
+                    drawMiniView();
+                    drawMiniViewCursor();
+
                     // todo : canvasの描画が終わる前にこの処理が実行されている？
                     isDisabled = false;
                     canSendMessage = true;
@@ -252,6 +288,7 @@
             // console.log('push image');
 
             drawData(data);
+            setMiniViewDrawTimer();
         });
 
         /**
@@ -272,6 +309,9 @@
             // console.log('push clear canvas');
 
             clearCanvas(mainContext);
+            miniViewContext.clearRect(0, 0, miniViewCanvas.width, miniViewCanvas.height);
+            clearTimeout(miniViewDrawTimer);
+            miniViewDrawTimer = null;
         });
 
         /**
@@ -682,6 +722,56 @@
         });
 
         /**
+         * MiniView関連イベント
+         */
+        $(window).on('scroll', function (e) {
+            'use strict';
+            // console.log('window scroll');
+            e.stopPropagation();
+
+            drawMiniViewCursor();
+        });
+        $(window).on('resize', function (e) {
+            'use strict';
+            // console.log('window resize');
+            e.stopPropagation();
+
+            if (windowResizeTimer) clearTimeout(windowResizeTimer);
+            windowResizeTimer = setTimeout(function () { drawMiniViewCursor(); }, 200);
+        });
+        $('#miniViewCursor').on('mousedown mousemove', function (e) {
+            'use strict';
+            // console.log('#miniViewCursor ' + e.type);
+            e.stopPropagation();
+
+            if (e.type === 'mousedown') miniViewFlag = true;
+            if (!miniViewFlag) return false;
+
+            var x = e.pageX - $('#miniViewCursor').offset().left;
+            var y = e.pageY - $('#miniViewCursor').offset().top;
+
+            var wWidth = $(window).width();
+            var wHeight = $(window).height() - 29;
+            var cursorSizeX = Math.ceil(wWidth * miniViewScale);
+            var cursorSizeY = Math.ceil(wHeight * miniViewScale);
+
+            var moveX = (x - cursorSizeX / 2) / miniViewScale;
+            var moveY = (y - cursorSizeY / 2) / miniViewScale;
+
+            window.scrollTo(moveX, moveY);
+            drawMiniViewCursor();
+
+            return false;
+        });
+        $('#miniViewCursor').on('mouseup mouseleave', function (e) {
+            'use strict';
+            // console.log('#miniViewCursor ' + e.type);
+            e.stopPropagation();
+
+            miniViewFlag = false;
+        });
+
+        /**
          * ヘルプボタンをクリック
          */
         $('#helpButton').on('click', function (e) {
@@ -863,6 +953,9 @@
             } else if (e.keyCode === 77) {
                 // M
                 if (isTextChatAvailable) toggleChatWindow();
+            } else if (e.keyCode === 86) {
+                // V
+                toggleMiniViewWindow();
             }
         });
         $(window).on('wheel', function (e) {
@@ -1280,6 +1373,8 @@
             // hack : 下描きモードの場合は無視。呼び出し元で制御するように修正する。
             if (isRoughMode) return;
 
+            setMiniViewDrawTimer();
+
             var mode = type.indexOf('erase') === -1 ? 'draw' : 'erase';
             if (buffer.length > 0 &&
                 buffer.slice(-1)[0].mode === mode &&
@@ -1412,6 +1507,114 @@
             $('#chatMessage')
                 .append('<p title="' + formatDate(data.time) + '">' + escapeHTML(data.message) + '</p>')
                 .append('<hr>');
+        }
+
+        /**
+         * MiniViewのサイズを初期化
+         */
+        function initMiniViewSize () {
+            'use strict';
+            // console.log('initMiniViewSize');
+
+            if (CANVAS_WIDTH < CANVAS_HEIGHT) {
+                miniViewCanvas.height = MINI_VIEW_SIZE_MAX;
+                miniViewCanvas.width = CANVAS_WIDTH * MINI_VIEW_SIZE_MAX / CANVAS_HEIGHT;
+                miniViewCursorCanvas.height = MINI_VIEW_SIZE_MAX;
+                miniViewCursorCanvas.width = CANVAS_WIDTH * MINI_VIEW_SIZE_MAX / CANVAS_HEIGHT;
+            } else {
+                miniViewCanvas.height = CANVAS_HEIGHT * MINI_VIEW_SIZE_MAX / CANVAS_WIDTH;
+                miniViewCanvas.width = MINI_VIEW_SIZE_MAX;
+                miniViewCursorCanvas.height = CANVAS_HEIGHT * MINI_VIEW_SIZE_MAX / CANVAS_WIDTH;
+                miniViewCursorCanvas.width = MINI_VIEW_SIZE_MAX;
+            }
+            $('#miniViewWindow').height(miniViewCanvas.height + 21);
+            $('#miniViewWindow').width(miniViewCanvas.width);
+
+            if ($(window).width() < $('.outline').width() ||
+                $(window).height() < $('.outline').height()) {
+                toggleMiniViewWindow();
+
+                var left = $(window).width() < $('.outline').width()
+                        ? $(window).scrollLeft() + $(window).width() - 332
+                        : $(window).scrollLeft() + $('.outline').width() - 332;
+                var top = $(window).scrollTop() + 59;
+                $('#miniViewWindow').offset({ top: top, left: left });
+            }
+        }
+
+        /**
+         * MiniViewのScaleを設定
+         */
+        function initMiniViewScale () {
+            'use strict';
+            // console.log('initMiniViewScale');
+
+            if (CANVAS_WIDTH < CANVAS_HEIGHT) {
+                miniViewScale = 300 / CANVAS_HEIGHT;
+            } else {
+                miniViewScale = 300 / CANVAS_WIDTH;
+            }
+            miniViewContext.scale(miniViewScale, miniViewScale);
+        }
+
+        /**
+         * MiniViewを描画する
+         */
+        function drawMiniView () {
+            'use strict';
+            // console.log('drawMiniView');
+
+            miniViewContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            miniViewContext.drawImage(mainCanvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+
+        /**
+         * MiniViewのCursorを描画する
+         */
+        function drawMiniViewCursor () {
+            'use strict';
+            // console.log('drawMiniViewCursor');
+
+            miniViewCursorContext.clearRect(0, 0, miniViewCursorCanvas.width, miniViewCursorCanvas.height);
+
+            var startX = Math.round($(window).scrollLeft() * miniViewScale);
+            var startY = Math.round($(window).scrollTop() * miniViewScale);
+            var width = Math.round($(window).width() * miniViewScale);
+            var height = Math.round(($(window).height() - 29) * miniViewScale);
+            if (miniViewCursorCanvas.width < startX + width) startX = miniViewCursorCanvas.width - width;
+            if (miniViewCursorCanvas.height < startY + height) startY = miniViewCursorCanvas.height - height;
+            miniViewCursorContext.beginPath();
+            miniViewCursorContext.rect(startX, startY, width, height);
+            miniViewCursorContext.stroke();
+        }
+
+        /**
+         * MiniViewの再描画
+         */
+        function setMiniViewDrawTimer () {
+            'use strict';
+            // console.log('setMiniViewDrawTimer');
+
+            if (miniViewDrawTimer) return;
+            miniViewDrawTimer = setTimeout(function () {
+                drawMiniView();
+                miniViewDrawTimer = null;
+            }, MINI_VIEW_DRAW_INTERVAL);
+        }
+
+        /**
+         * MiniViewの表示切替
+         */
+        function toggleMiniViewWindow () {
+            'use strict';
+            // console.log('toggleMiniViewWindow');
+
+            isMiniViewVisible = !isMiniViewVisible;
+            if (isMiniViewVisible) {
+                $('#miniViewWindow').removeClass('displayNone');
+            } else {
+                $('#miniViewWindow').addClass('displayNone');
+            }
         }
 
         /**
