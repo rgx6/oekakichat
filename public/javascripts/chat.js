@@ -309,7 +309,7 @@
             // console.log('push clear canvas');
 
             clearCanvas(mainContext);
-            miniViewContext.clearRect(0, 0, miniViewCanvas.width, miniViewCanvas.height);
+            drawMiniView();
             clearTimeout(miniViewDrawTimer);
             miniViewDrawTimer = null;
         });
@@ -1612,6 +1612,9 @@
             isMiniViewVisible = !isMiniViewVisible;
             if (isMiniViewVisible) {
                 $('#miniViewWindow').removeClass('displayNone');
+                drawMiniView();
+                clearTimeout(miniViewDrawTimer);
+                miniViewDrawTimer = null;
             } else {
                 $('#miniViewWindow').addClass('displayNone');
             }
