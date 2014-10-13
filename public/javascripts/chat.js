@@ -309,6 +309,9 @@
             // console.log('push clear canvas');
 
             clearCanvas(mainContext);
+
+            if (!isMiniViewVisible) return;
+
             drawMiniView();
             clearTimeout(miniViewDrawTimer);
             miniViewDrawTimer = null;
@@ -729,12 +732,16 @@
             // console.log('window scroll');
             e.stopPropagation();
 
+            if (!isMiniViewVisible) return;
+
             drawMiniViewCursor();
         });
         $(window).on('resize', function (e) {
             'use strict';
             // console.log('window resize');
             e.stopPropagation();
+
+            if (!isMiniViewVisible) return;
 
             if (windowResizeTimer) clearTimeout(windowResizeTimer);
             windowResizeTimer = setTimeout(function () { drawMiniViewCursor(); }, 200);
@@ -1617,6 +1624,8 @@
                 miniViewDrawTimer = null;
             } else {
                 $('#miniViewWindow').addClass('displayNone');
+                clearTimeout(miniViewDrawTimer);
+                miniViewDrawTimer = null;
             }
         }
 
