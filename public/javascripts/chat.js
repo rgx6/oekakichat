@@ -277,7 +277,10 @@
             // console.log('disconnect');
 
             isDisabled = true;
-            alert('サーバーとの接続が切断されました。\nページを更新してください。');
+            $.blockUI({
+                message: '<h4>サーバーとの接続が切断されました。<br />ページを更新してください。</h4>',
+                css: { width: '300px' },
+            });
         });
 
         /**
