@@ -17,8 +17,6 @@ var RESULT_ROOM_NOT_AVAILABLE = 'room not available';
 var RESULT_ROOM_INITIALIZING  = 'room initializing';
 var RESULT_ROOM_IS_ACTIVE     = 'room is active';
 
-var KEY_ID = 'id';
-
 var TYPE_UNDEFINED = 'undefined';
 var TYPE_BOOLEAN   = 'boolean';
 
@@ -197,7 +195,7 @@ exports.onConnection = function (client) {
             }).then(function () {
                 var room = rooms[id];
 
-                client.set(KEY_ID, id);
+                client.roomId = id;
                 client.join(id);
 
                 room.userCount += 1;
@@ -253,11 +251,9 @@ exports.onConnection = function (client) {
         'use strict';
         logger.trace('send image : ' + client.id);
 
-        var id;
-        client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) { return; }
-            id = _id;
-        });
+        var id = client.roomId;
+
+        if (isUndefinedOrNull(id)) return;
 
         if (isUndefinedOrNull(rooms[id])) return;
 
@@ -276,11 +272,9 @@ exports.onConnection = function (client) {
         'use strict';
         logger.trace('send message : ' + client.id);
 
-        var id;
-        client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) { return; }
-            id = _id;
-        });
+        var id = client.roomId;
+
+        if (isUndefinedOrNull(id)) return;
 
         if (isUndefinedOrNull(rooms[id])) return;
 
@@ -321,11 +315,9 @@ exports.onConnection = function (client) {
         'use strict';
         // logger.debug('request message : ' + client.id);
 
-        var id;
-        client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) { return; }
-            id = _id;
-        });
+        var id = client.roomId;
+
+        if (isUndefinedOrNull(id)) return;
 
         if (isUndefinedOrNull(rooms[id])) return;
 
@@ -367,14 +359,12 @@ exports.onConnection = function (client) {
         'use strict';
         logger.debug('clear canvas : ' + client.id);
 
-        var id;
-        client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) {
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-            id = _id;
-        });
+        var id = client.roomId;
+
+        if (isUndefinedOrNull(id)) {
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
+        }
 
         if (isUndefinedOrNull(rooms[id])) {
             callback({ result: RESULT_SYSTEM_ERROR });
@@ -400,14 +390,12 @@ exports.onConnection = function (client) {
         'use strict';
         logger.debug('save canvas : ' + client.id);
 
-        var id;
-        client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) {
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-            id = _id;
-        });
+        var id = client.roomId;
+
+        if (isUndefinedOrNull(id)) {
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
+        }
 
         if (isUndefinedOrNull(rooms[id])) {
             callback({ result: RESULT_SYSTEM_ERROR });
@@ -437,11 +425,9 @@ exports.onConnection = function (client) {
             return;
         }
 
-        var id;
-        client.get(KEY_ID, function (err, _id) {
-            if (err || !_id) return;
-            id = _id;
-        });
+        var id = client.roomId;
+
+        if (isUndefinedOrNull(id)) return;
 
         if (isUndefinedOrNull(rooms[id])) return;
         rooms[id].userCount -= 1;
