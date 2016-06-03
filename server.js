@@ -14,7 +14,7 @@ accessLogger.setLevel(log4js.levels.INFO);
 var app = express();
 app.set('port', process.env.PORT || 3001);
 app.set('views', __dirname + '/views');
-app.set('view engine', 'jade');
+app.set('view engine', 'pug');
 // app.enable('strict routing');
 app.use(express.favicon());
 app.use(express.bodyParser());

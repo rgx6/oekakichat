@@ -17,17 +17,17 @@ block body
                     div.form-group
                         label.col-xs-3.control-label(for="roomName") 名前
                         div.col-xs-7
-                            input#roomName.form-control(type="text", maxlength="#{nameLengthMax}")
+                            input#roomName.form-control(type="text", maxlength= nameLengthMax)
                         p.help-block #{nameLengthMax}文字以内
                     div.form-group
                         label.col-xs-3.control-label(for="roomWidth") キャンバスの幅
                         div.col-xs-2
-                            input#roomWidth.form-control(type="number", min="#{widthMin}", max="#{widthMax}")
+                            input#roomWidth.form-control(type="number", min= widthMin, max= widthMax)
                         p.help-block #{widthMin}～#{widthMax}ピクセル  実際のサイズは枠線で +2 されます。
                     div.form-group
                         label.col-xs-3.control-label(for="roomHeight") キャンバスの高さ
                         div.col-xs-2
-                            input#roomHeight.form-control(type="number", min="#{heightMin}", max="#{heightMax}")
+                            input#roomHeight.form-control(type="number", min= heightMin, max= heightMax)
                         p.help-block #{heightMin}～#{heightMax}ピクセル  実際のサイズは枠線とツールバーで +30 されます。
                     div.form-group
                         label.col-xs-3.control-label(for="roomIsChatAvailable") お絵かきチャット使用可能
@@ -49,7 +49,7 @@ block body
                         div.col-xs-8
                             label.checkbox
                                 input#roomIsLogOpen(type="checkbox")
-                                部屋のURLを知らない人にもログを公開します(実装予定)
+                                | 部屋のURLを知らない人にもログを公開します(実装予定)
                     div.form-group
                         div.col-xs-offset-3.col-xs-9
                             button#updateConfig.btn.btn-primary(type="button") 更新

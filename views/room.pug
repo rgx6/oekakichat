@@ -14,8 +14,13 @@ block link
     link(type="text/css", rel="stylesheet", href="/stylesheets/colorbox.css")
     link(type="text/css", rel="stylesheet", href="/stylesheets/style.css")
 block body
-    div.outline(style="width: #{width+2}px; height: #{height+30}px;")
-        div#toolbar.toolbar(style="width: #{width}px; height: 28px;")
+    - var outlineStyle = "width: " + (width + 2) + "px; height: " + (height + 30) + "px;";
+    - var toolbarStyle = "width: " + width + "px; height: 28px;";
+    - var canvasStyle = "width: " + width + "px; height: " + height + "px;";
+    - var canvasWidth = width + "px";
+    - var canvasHeight = height + "px";
+    div.outline(style= outlineStyle)
+        div#toolbar.toolbar(style= toolbarStyle)
             div.drawTool
                 label#brush.toggle.active(title="ブラシ") 筆
                 label#eraser.toggle(title="消しゴム") 消
@@ -43,26 +48,25 @@ block body
                 label#userCount.userCount
                 label#globalUserCount.userCount
             div.clear
-        div#canvasArea.canvas(style="width: #{width}px; height: #{height}px;")
-            canvas#combinationCanvas.mainCanvas(width="#{width}px", height="#{height}px")
-            canvas#roughCanvas.mainCanvas(width="#{width}px", height="#{height}px")
-            canvas#mainCanvas.mainCanvas(width="#{width}px", height="#{height}px")
-            canvas#cursorCanvas.mainCanvas(width="#{width}px", height="#{height}px")
+        div#canvasArea.canvas(style= canvasStyle)
+            canvas#combinationCanvas.mainCanvas(width= canvasWidth, height= canvasHeight)
+            canvas#roughCanvas.mainCanvas(width= canvasWidth, height= canvasHeight)
+            canvas#mainCanvas.mainCanvas(width= canvasWidth, height= canvasHeight)
+            canvas#cursorCanvas.mainCanvas(width= canvasWidth, height= canvasHeight)
         div#miniViewWindow.miniViewWindow.displayNone
             div#miniViewHandle.miniViewHandle
             canvas#miniView.miniView
             canvas#miniViewCursor.miniViewCursor
         div#chatWindow.chatWindow.displayNone
             div.chatHeader
-                div#dragHandle.dragHandle
-                    チャット
+                div#dragHandle.dragHandle チャット
                 label#chatLog(title="もっと前のログ") log
                 label#chatFirst(title="一番上へ") ∧
                 label#chatLast(title="一番下へ") ∨
                 div.clear
             div#chatMessage.chatMessage
             div.chatFooter
-                input#message(type="text", maxlength="#{messageLengthMax}")
+                input#message(type="text", maxlength= messageLengthMax)
                 label#messageButton 送信
                 div.clear
         div
