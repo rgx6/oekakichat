@@ -761,7 +761,7 @@
             var y = e.pageY - $('#miniViewCursor').offset().top;
 
             var wWidth = $(window).width();
-            var wHeight = $(window).height() - 29;
+            var wHeight = window.innerHeight - 29;
             var cursorSizeX = Math.ceil(wWidth * miniViewScale);
             var cursorSizeY = Math.ceil(wHeight * miniViewScale);
 
@@ -1541,7 +1541,7 @@
             $('#miniViewWindow').width(miniViewCanvas.width);
 
             if ($(window).width() < $('.outline').width() ||
-                $(window).height() < $('.outline').height()) {
+                window.innerHeight < $('.outline').height()) {
                 toggleMiniViewWindow();
 
                 var left = $(window).width() < $('.outline').width()
@@ -1590,7 +1590,7 @@
             var startX = Math.round($(window).scrollLeft() * miniViewScale);
             var startY = Math.round($(window).scrollTop() * miniViewScale);
             var width = Math.round($(window).width() * miniViewScale);
-            var height = Math.round(($(window).height() - 29) * miniViewScale);
+            var height = Math.round((window.innerHeight - 29) * miniViewScale);
             if (miniViewCursorCanvas.width < startX + width) startX = miniViewCursorCanvas.width - width;
             if (miniViewCursorCanvas.height < startY + height) startY = miniViewCursorCanvas.height - height;
             miniViewCursorContext.beginPath();
