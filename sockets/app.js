@@ -550,10 +550,10 @@ exports.onConnection = function (client) {
     client.on('admin authentication', function (password, callback) {
         'use strict';
         logger.info('admin authentication : ' + password);
-console.log(password);
+
         var key = config.secretKey;
         logger.debug(notp.totp.gen(key, { time: 30 }));
-console.log(key);
+
         if (key !== '' && notp.totp.verify(password, key, { window: 1, time: 30 })) {
             adminClientId = client.id;
             callback({ result: RESULT_OK });
