@@ -50,7 +50,11 @@
     TemporaryLogSchema.set('autoIndex', false);
     mongoose.model('TemporaryLog', TemporaryLogSchema);
 
-    mongoose.connect('mongodb://localhost/OekakiChat');
+    mongoose.connect('mongodb://localhost/OekakiChat', {
+        useCreateIndex: true,
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    });
 
     exports.Room = mongoose.model('Room');
     exports.Log = mongoose.model('Log');

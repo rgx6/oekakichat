@@ -38,7 +38,7 @@ var globalUserCount = 0;
 var roomsUserCount = 0;
 
 // サンプル作成
-db.Room.update({
+db.Room.updateOne({
     roomId: '00000000000000000000000000000000'
 }, {
     $setOnInsert: {
@@ -507,7 +507,7 @@ exports.onConnection = function (client) {
             return;
         }
 
-        db.Room.update({
+        db.Room.updateOne({
             roomId:   data.roomId,
             configId: data.configId,
         }, {
@@ -550,10 +550,10 @@ exports.onConnection = function (client) {
     client.on('admin authentication', function (password, callback) {
         'use strict';
         logger.info('admin authentication : ' + password);
-
+console.log(password);
         var key = config.secretKey;
         logger.debug(notp.totp.gen(key, { time: 30 }));
-
+console.log(key);
         if (key !== '' && notp.totp.verify(password, key, { window: 1, time: 30 })) {
             adminClientId = client.id;
             callback({ result: RESULT_OK });
@@ -744,7 +744,7 @@ function deleteTemporaryLog (id) {
     logger.debug('deleteTemporaryLog : ' + id);
 
     return new Promise(function (resolve, reject) {
-        db.TemporaryLog.update({
+        db.TemporaryLog.updateOne({
             roomId: id,
             isDeleted: false,
         }, {
@@ -776,7 +776,7 @@ function saveTemporaryLog (id, result) {
     logger.debug('saveTemporaryLog : ' + id);
 
     return new Promise(function (resolve, reject) {
-        db.TemporaryLog.update({
+        db.TemporaryLog.updateOne({
             roomId: id,
             isDeleted: false,
         }, {
