@@ -1,5 +1,5 @@
-
 node_modules
+/db_configuration.js
 /db/*
 /log/*
 /public/log/*.png

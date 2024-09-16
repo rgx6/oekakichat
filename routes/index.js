@@ -80,16 +80,7 @@ var room = function (req, res) {
     }
 
     var query = db.Room.findOne({ roomId: id });
-    query.exec(function (err, doc) {
-        if (err) {
-            logger.error(err);
-            res.status(500).render('error', {
-                title:   APP_TITLE,
-                message: msgSystemError,
-            });
-            return;
-        }
-
+    query.exec().then((doc) => {
         if (!doc) {
             logger.warn('room not exists : ' + id);
             res.status(404).render('error', {
@@ -114,6 +105,13 @@ var room = function (req, res) {
             height:           doc.height,
             messageLengthMax: MESSAGE_LENGTH_MAX,
         });
+    }).catch((err) => {
+        logger.error(err);
+        res.status(500).render('error', {
+            title:   APP_TITLE,
+            message: msgSystemError,
+        });
+        return;
     });
 };
 
@@ -180,13 +178,7 @@ var apiLog = function (req, res) {
     }
 
     var query = db.Room.findOne({ roomId: id });
-    query.exec(function (err, roomDoc) {
-        if (err) {
-            logger.error(err);
-            res.status(500).json({ result: RESULT_SYSTEM_ERROR });
-            return;
-        }
-
+    query.exec().then((roomDoc) => {
         if (!roomDoc) {
             logger.warn('room not exists : ' + id);
             res.status(400).json({ result: RESULT_ROOM_NOT_EXISTS });
@@ -199,14 +191,8 @@ var apiLog = function (req, res) {
             return;
         }
 
-        var query = db.Log.count({ roomId: id, isDeleted: false });
-        query.exec(function (err, count) {
-            if (err) {
-                logger.error(err);
-                res.status(500).json({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-
+        var query = db.Log.countDocuments({ roomId: id, isDeleted: false });
+        query.exec().then((count) => {
             if (count === 0) {
                 res.status(200).json({
                     result: RESULT_OK,
@@ -222,13 +208,7 @@ var apiLog = function (req, res) {
                     .limit(ITEMS_PER_LOG_PAGE)
                     .skip((page - 1) * ITEMS_PER_LOG_PAGE)
                     .sort({ fileName: 'desc' });
-            query.exec(function (err, logDocs) {
-                if (err) {
-                    logger.error(err);
-                    res.status(500).json({ result: RESULT_SYSTEM_ERROR });
-                    return;
-                }
-
+            query.exec().then((logDocs) => {
                 res.status(200).json({
                     result:       RESULT_OK,
                     name:         roomDoc.name,
@@ -236,8 +216,20 @@ var apiLog = function (req, res) {
                     items:        count,
                     itemsPerPage: ITEMS_PER_LOG_PAGE,
                 });
+            }).catch((err) => {
+                logger.error(err);
+                res.status(500).json({ result: RESULT_SYSTEM_ERROR });
+                return;
             });
+        }).catch((err) => {
+            logger.error(err);
+            res.status(500).json({ result: RESULT_SYSTEM_ERROR });
+            return;
         });
+    }).catch((err) => {
+        logger.error(err);
+        res.status(500).json({ result: RESULT_SYSTEM_ERROR });
+        return;
     });
 };
 

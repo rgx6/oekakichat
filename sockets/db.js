@@ -2,6 +2,8 @@
     'use strict';
 
     var mongoose = require('mongoose');
+    var config = require('../db_configuration.js');
+
     var Schema = mongoose.Schema;
 
     var RoomSchema = new Schema({
@@ -50,11 +52,7 @@
     TemporaryLogSchema.set('autoIndex', false);
     mongoose.model('TemporaryLog', TemporaryLogSchema);
 
-    mongoose.connect('mongodb://localhost/OekakiChat', {
-        useCreateIndex: true,
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-    });
+    mongoose.connect(config.connectionString);
 
     exports.Room = mongoose.model('Room');
     exports.Log = mongoose.model('Log');
