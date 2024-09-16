@@ -54,12 +54,9 @@ db.Room.updateOne({
         registeredTime:      new Date(),
         updatedTime:         new Date(),
     }
-}, { upsert: true },
-function (err, numberAffected) {
-    if (err) {
-        logger.error(err);
-        return;
-    }
+}, { upsert: true }).then((numberAffected) => {}).catch((err) => {
+    logger.error(err);
+    return;
 });
 
 exports.onConnection = function (client) {
@@ -109,13 +106,7 @@ exports.onConnection = function (client) {
         room.isLogOpen           = false;
         room.registeredTime      = new Date();
         room.updatedTime         = new Date();
-        room.save(function (err, doc) {
-            if (err) {
-                logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-
+        room.save().then((doc) => {
             callback({
                 result:   RESULT_OK,
                 roomId:   doc.roomId,
@@ -123,6 +114,11 @@ exports.onConnection = function (client) {
                 width:    doc.width,
                 height:   doc.height,
             });
+        })
+        .catch((err) => {
+            logger.error(err);
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
         });
     });
 
@@ -140,13 +136,7 @@ exports.onConnection = function (client) {
         }
 
         var query = db.Room.where({ roomId: id });
-        query.findOne(function (err, doc) {
-            if (err) {
-                logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-
+        query.findOne().then((doc) => {
             if (isUndefinedOrNull(doc)) {
                 logger.warn('enter room : ' + client.id + ' : ' + RESULT_ROOM_NOT_EXISTS);
                 callback({ result: RESULT_ROOM_NOT_EXISTS });
@@ -174,22 +164,21 @@ exports.onConnection = function (client) {
                 rooms[id] = new Room(id, doc.name, doc.isTextChatAvailable);
 
                 var q = db.TemporaryLog
-                        .findOne({ roomId: id, isDeleted: false })
-                        .select({ log: 1 });
-                q.exec(function (err, doc) {
-                    if (err) {
-                        delete rooms[id];
-                        logger.error(err);
-                        callback({ result: RESULT_SYSTEM_ERROR });
-                        reject(new Error('TemporaryLog findOne failed'));
-                        return;
-                    }
+                    .findOne({ roomId: id, isDeleted: false })
+                    .select({ log: 1 });
+                q.exec().then((doc) => {
                     if (doc) {
                         rooms[id].imageLog = doc.log;
                     }
 
                     rooms[id].isInitialized = true;
                     resolve();
+                    return;
+                }).catch((err) => {
+                    delete rooms[id];
+                    logger.error(err);
+                    callback({ result: RESULT_SYSTEM_ERROR });
+                    reject(new Error('TemporaryLog findOne failed'));
                     return;
                 });
             }).then(function () {
@@ -221,12 +210,7 @@ exports.onConnection = function (client) {
                         .select({ message: 1, registeredTime: 1 })
                         .limit(CHAT_LOG_LIMIT_PER_REQUEST)
                         .sort({ registeredTime: 'desc' });
-                query.exec(function (err, docs) {
-                    if (err) {
-                        logger.error(err);
-                        callback({ result: RESULT_SYSTEM_ERROR });
-                        return;
-                    }
+                query.exec().then((docs) => {
                     docs.forEach(function (doc) {
                         messages.push({ message: doc.message, time: doc.registeredTime });
                     });
@@ -239,8 +223,16 @@ exports.onConnection = function (client) {
                         imageLog:            room.imageLog,
                         messages:            messages,
                     });
+                }).catch((err) => {
+                    logger.error(err);
+                    callback({ result: RESULT_SYSTEM_ERROR });
+                    return;
                 });
             });
+        }).catch((err) => {
+            logger.error(err);
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
         });
     });
 
@@ -295,15 +287,13 @@ exports.onConnection = function (client) {
         chat.message        = message;
         chat.registeredTime = now;
         chat.isDeleted      = false;
-        chat.save(function (err, doc) {
-            if (err) {
-                logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-
+        chat.save().then((doc) => {
             callback({ result: RESULT_OK });
             server.sockets.to(id).emit('push message', { message: message, time: now });
+            return;
+        }).catch((err) => {
+            logger.error(err);
+            callback({ result: RESULT_SYSTEM_ERROR });
             return;
         });
     });
@@ -332,15 +322,10 @@ exports.onConnection = function (client) {
 
         var messages = [];
         var query = db.Chat.find({ roomId: id, isDeleted: false, registeredTime: { $lt: data } })
-                .select({ message: 1, registeredTime: 1 })
-                .limit(CHAT_LOG_LIMIT_PER_REQUEST)
-                .sort({ registeredTime: 'desc' });
-        query.exec(function (err, docs) {
-            if (err) {
-                logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
+            .select({ message: 1, registeredTime: 1 })
+            .limit(CHAT_LOG_LIMIT_PER_REQUEST)
+            .sort({ registeredTime: 'desc' });
+        query.exec().then((docs) => {
             docs.forEach(function (doc) {
                 messages.push({ message: doc.message, time: doc.registeredTime });
             });
@@ -349,6 +334,10 @@ exports.onConnection = function (client) {
                 result:   RESULT_OK,
                 messages: messages,
             });
+        }).catch((err) => {
+            logger.error(err);
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
         });
     });
 
@@ -449,13 +438,7 @@ exports.onConnection = function (client) {
         }
 
         var query = db.Room.where({ configId: configId });
-        query.findOne(function (err, doc) {
-            if (err) {
-                logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-
+        query.findOne().then((doc) => {
             if (isUndefinedOrNull(doc)) {
                 logger.warn('enter config : ' + client.id + ' : ' + RESULT_ROOM_NOT_EXISTS);
                 callback({ result: RESULT_ROOM_NOT_EXISTS });
@@ -473,6 +456,10 @@ exports.onConnection = function (client) {
                 isLogAvailable:      doc.isLogAvailable,
                 isLogOpen:           doc.isLogOpen,
             });
+        }).catch((err) => {
+            logger.error(err);
+            callback({ result: RESULT_SYSTEM_ERROR });
+            return;
         });
     });
 
@@ -521,13 +508,7 @@ exports.onConnection = function (client) {
                 isLogOpen:           data.isLogOpen,
                 updatedTime:         new Date(),
             }
-        }, null, function (err, numberAffected) {
-            if (err) {
-                logger.error(err);
-                callback({ result: RESULT_SYSTEM_ERROR });
-                return;
-            }
-
+        }, null).then((numberAffected) => {
             if (numberAffected === 0) {
                 logger.error('update config room not exists');
                 callback({ result: RESULT_ROOM_NOT_EXISTS });
@@ -540,6 +521,10 @@ exports.onConnection = function (client) {
             }
 
             callback({ result: RESULT_OK });
+            return;
+        }).catch((err) => {
+            logger.error(err);
+            callback({ result: RESULT_SYSTEM_ERROR });
             return;
         });
     });
@@ -696,7 +681,7 @@ function saveImage (id, data) {
         var fileName = new Date().getTime();
 
         // 原寸の画像を保存
-        var buf = new Buffer(data.png, 'base64');
+        var buf = Buffer.from(data.png, 'base64');
         var path = './public/log/' + fileName + '.png';
         fs.writeFile(path, buf, function (err) {
             if (err) {
@@ -706,7 +691,7 @@ function saveImage (id, data) {
             }
 
             // サムネイル画像を保存
-            buf = new Buffer(data.thumbnailPng, 'base64');
+            buf = Buffer.from(data.thumbnailPng, 'base64');
             path = './public/log/thumb/' + fileName + '.thumb.png';
             fs.writeFile(path, buf, function (err) {
                 if (err) {
@@ -721,14 +706,12 @@ function saveImage (id, data) {
                 log.isDeleted      = false;
                 log.registeredTime = new Date();
                 log.updatedTime    = new Date();
-                log.save(function (err, doc) {
-                    if (err) {
-                        logger.error(err);
-                        reject(new Error('save image log failed'));
-                        return;
-                    }
-
+                log.save().then((doc) => {
                     resolve(id);
+                    return;
+                }).catch((err) => {
+                    logger.error(err);
+                    reject(new Error('save image log failed'));
                     return;
                 });
             });
@@ -754,14 +737,12 @@ function deleteTemporaryLog (id) {
             }
         }, {
             multi: true
-        }, function (err, numberAffected) {
-            if (err) {
-                logger.error(err);
-                reject(new Error('delete temporary log failed'));
-                return;
-            }
-
+        }).then((numberAffected) => {
             resolve();
+            return;
+        }).catch((err) => {
+            logger.error(err);
+            reject(new Error('delete temporary log failed'));
             return;
         });
     });
@@ -786,14 +767,7 @@ function saveTemporaryLog (id, result) {
             }
         }, {
             multi: true
-        }, function (err, numberAffected) {
-            if (err) {
-                logger.error(err);
-                result.push(id + ' : update failed');
-                resolve();
-                return;
-            }
-
+        }).then((numberAffected) => {
             if (rooms[id].imageLog.length === 0) {
                 result.push(id + ' : no data');
                 resolve();
@@ -806,17 +780,21 @@ function saveTemporaryLog (id, result) {
             log.registeredTime = new Date();
             log.updatedTime    = new Date();
             log.isDeleted      = false;
-            log.save(function (err, doc) {
-                if (err) {
-                    logger.error(err);
-                    result.push(id + ' : save failed');
-                    resolve();
-                    return;
-                }
+            log.save().then((doc) => {
                 result.push(id + ' : saved');
                 resolve();
                 return;
+            }).catch((err) => {
+                logger.error(err);
+                result.push(id + ' : save failed');
+                resolve();
+                return;
             });
+        }).catch((err) => {
+            logger.error(err);
+            result.push(id + ' : update failed');
+            resolve();
+            return;
         });
     });
 }
